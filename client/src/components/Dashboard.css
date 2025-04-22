@@ -11,6 +11,8 @@
   --light-yellow: #fffbeb;
   --green: #4caf50;
   --light-green: #ebf7eb;
+  --orange: #ff9800;
+  --light-orange: #fff8e1;
   --text-primary: #333333;
   --text-secondary: #667085;
   --text-light: #94a3b8;
@@ -126,6 +128,13 @@
 }
 
 .dashboard-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Calendar and Gamification Row */
+.calendar-gamification-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
@@ -398,9 +407,9 @@
   color: var(--green);
 }
 
-/* Calendar Card */
-.calendar-card {
-  grid-column: 1 / -1;
+/* Calendar Card - Smaller version */
+.calendar-card-small {
+  height: 100%;
 }
 
 .calendar {
@@ -411,11 +420,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .current-month {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   margin: 0;
 }
@@ -423,7 +432,7 @@
 .prev-month, .next-month {
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   color: var(--text-secondary);
 }
@@ -431,7 +440,7 @@
 .calendar-grid {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .weekdays {
@@ -443,22 +452,22 @@
 .weekdays div {
   font-weight: 500;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 4px;
 }
 
 .day {
-  height: 40px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -474,6 +483,120 @@
 
 .day.other-month {
   color: var(--text-light);
+}
+
+/* Gamification Card */
+.gamification-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.gamification-icon {
+  font-size: 20px;
+  color: var(--yellow);
+}
+
+.streak-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.streak-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.streak-flame {
+  font-size: 28px;
+}
+
+.streak-count h3 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--orange);
+}
+
+.streak-count p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.level-badge {
+  background: linear-gradient(135deg, var(--light-blue), var(--purple));
+  color: white;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.quest-progress {
+  margin-bottom: 24px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.progress-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.achievements-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+.achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.achievement-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: var(--light-yellow);
+  transition: transform 0.2s;
+}
+
+.achievement-item:hover {
+  transform: translateY(-2px);
+}
+
+.achievement-icon {
+  font-size: 20px;
+}
+
+.achievement-details {
+  flex: 1;
+}
+
+.achievement-name {
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  font-size: 14px;
+}
+
+.achievement-description {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 12px;
 }
 
 /* Weekly Overview */
@@ -660,7 +783,8 @@
 
 /* Responsive Styling */
 @media (max-width: 1024px) {
-  .dashboard-row {
+  .dashboard-row,
+  .calendar-gamification-row {
     grid-template-columns: 1fr;
   }
   

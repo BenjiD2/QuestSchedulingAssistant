@@ -55,6 +55,17 @@ const Dashboard = () => {
     { day: 'Sun', date: 27, events: [] }
   ];
   
+  // Quest & gamification data
+  const streakDays = 7;
+  const currentLevel = 3;
+  const questProgress = 65;
+  const questGoal = 100;
+  const achievements = [
+    { icon: '🔥', name: 'On Fire', description: '7-day streak' },
+    { icon: '⭐', name: 'Super Achiever', description: 'Completed 5 tasks today' },
+    { icon: '🚀', name: 'Productivity Master', description: 'Completed all tasks yesterday' }
+  ];
+  
   // Generate calendar days
   const calendarDays = [];
   
@@ -155,9 +166,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="dashboard-row">
-          {/* Calendar */}
-          <div className="dashboard-card calendar-card">
+        <div className="dashboard-row calendar-gamification-row">
+          {/* Calendar - smaller version */}
+          <div className="dashboard-card calendar-card-small">
             <div className="card-header">
               <h2>Calendar</h2>
               <span className="calendar-icon">📅</span>
@@ -185,6 +196,52 @@ const Dashboard = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Gamification Box */}
+          <div className="dashboard-card gamification-card">
+            <div className="card-header">
+              <h2>Quest Progress</h2>
+              <span className="gamification-icon">🏆</span>
+            </div>
+            
+            <div className="streak-container">
+              <div className="streak-info">
+                <div className="streak-flame">🔥</div>
+                <div className="streak-count">
+                  <h3>{streakDays}</h3>
+                  <p>day streak</p>
+                </div>
+              </div>
+              <div className="level-badge">
+                <span className="level-text">Level {currentLevel}</span>
+              </div>
+            </div>
+            
+            <div className="quest-progress">
+              <div className="progress-header">
+                <span>Daily Quest Progress</span>
+                <span className="progress-value">{questProgress}/{questGoal}</span>
+              </div>
+              <div className="progress-bar">
+                <div className="progress" style={{ width: `${(questProgress/questGoal) * 100}%` }}></div>
+              </div>
+            </div>
+            
+            <div className="achievements-section">
+              <h3>Recent Achievements</h3>
+              <div className="achievements-list">
+                {achievements.map((achievement, index) => (
+                  <div className="achievement-item" key={index}>
+                    <div className="achievement-icon">{achievement.icon}</div>
+                    <div className="achievement-details">
+                      <p className="achievement-name">{achievement.name}</p>
+                      <p className="achievement-description">{achievement.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
