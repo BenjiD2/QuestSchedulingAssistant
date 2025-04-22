@@ -1,0 +1,24 @@
+{
+  "name": "questschedulingassistant",
+  "version": "1.0.0",
+  "description": "Quest Scheduling Assistant - A productivity app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "cd client && npm start",
+    "client": "cd client && npm start",
+    "install-client": "cd client && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BenjiD2/QuestSchedulingAssistant.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BenjiD2/QuestSchedulingAssistant/issues"
+  },
+  "homepage": "https://github.com/BenjiD2/QuestSchedulingAssistant#readme"
+}
