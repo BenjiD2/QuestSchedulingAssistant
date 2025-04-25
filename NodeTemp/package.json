@@ -1,7 +1,16 @@
 {
+  "name": "google-calendar-auth",
+  "version": "1.0.0",
+  "description": "Google Calendar OAuth Authentication",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "googleapis": "^129.0.0",
     "@google-cloud/local-auth": "^2.1.0",
-    "dotenv": "^16.5.0",
-    "googleapis": "^105.0.0"
+    "dotenv": "^16.3.1"
   }
 }
