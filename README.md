@@ -10,6 +10,7 @@ server/tests/unit/
 ├── task.test.js          # Unit tests for Task model
 ├── taskManager.test.js   # Integration tests for TaskManager service
 ├── calendarService.test.js # Tests for Google Calendar integration
+├── taskOperations.test.js  # Tests for task CRUD operations
 └── updateSchedule.test.js  # End-to-end tests for schedule updates
 ```
 
@@ -33,3 +34,4 @@ The test suite covers:
 - Data consistency
 - Error handling and recovery
 - Concurrent operations
+- CRUD operations for tasks
