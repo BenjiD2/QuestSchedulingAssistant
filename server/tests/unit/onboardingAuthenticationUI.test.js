@@ -33,23 +33,27 @@ describe('OnboardingUI Component', () => {
       mockAuth.isAuthenticated.mockReturnValue(false);
     });
 
+    // should display the welcome header when user is not authenticated
     test('renders welcome message', () => {
       render(React.createElement(OnboardingUI, { auth: new Auth() }));
       expect(screen.getByText(/welcome to questchampion/i)).toBeInTheDocument();
     });
 
+    // should show both Register and Login buttons for unauthenticated user
     test('shows Register and Login buttons', () => {
       render(React.createElement(OnboardingUI, { auth: new Auth() }));
       expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
     });
 
+    // should call auth.register once when Register button is clicked
     test('calls register() when Register button clicked', () => {
       render(React.createElement(OnboardingUI, { auth: new Auth() }));
       fireEvent.click(screen.getByRole('button', { name: /register/i }));
       expect(mockAuth.register).toHaveBeenCalledTimes(1);
     });
 
+    // should call auth.login once when Login button is clicked
     test('calls login() when Login button clicked', () => {
       render(React.createElement(OnboardingUI, { auth: new Auth() }));
       fireEvent.click(screen.getByRole('button', { name: /login/i }));
@@ -63,12 +67,14 @@ describe('OnboardingUI Component', () => {
       mockAuth.getUser.mockReturnValue(sampleUser);
     });
 
+    // should hide Register and Login buttons when user is authenticated
     test('hides Register and Login buttons', () => {
       render(React.createElement(OnboardingUI, { auth: new Auth() }));
       expect(screen.queryByRole('button', { name: /register/i })).toBeNull();
       expect(screen.queryByRole('button', { name: /login/i })).toBeNull();
     });
 
+    // should greet the authenticated user by name
     test('displays greeting with user name', () => {
       render(React.createElement(OnboardingUI, { auth: new Auth() }));
       expect(
@@ -105,16 +111,19 @@ describe('HomePageUI Component', () => {
   ];
   const mockUser = { userId: 'u1', name: 'Alice', email: 'alice@example.com' };
 
+  // should render personalized greeting on the home page
   test('displays greeting with user name', () => {
     render(React.createElement(HomePageUI, { user: mockUser, tasks: mockTasks }));
     expect(screen.getByText(/hello, alice/i)).toBeInTheDocument();
   });
 
+  // should render a list item for each task provided
   test('renders correct number of tasks', () => {
     render(React.createElement(HomePageUI, { user: mockUser, tasks: mockTasks }));
     expect(screen.getAllByRole('listitem')).toHaveLength(mockTasks.length);
   });
 
+  // should display each task's title and description in the list
   test('shows task titles and descriptions', () => {
     render(React.createElement(HomePageUI, { user: mockUser, tasks: mockTasks }));
     mockTasks.forEach((t) => {
