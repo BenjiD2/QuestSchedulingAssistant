@@ -1,17 +1,17 @@
 
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import GoogleCalendar from "./GoogleCalendar";
-import { gapi } from "gapi-script"; 
-
 /**
- * This is a test suite for the GoogleCalendar component.
+ * Unit tests for the GoogleCalendar component.
  * It checks that the "Sign in with Google" button shows up when the user is not signed in, and 
- * ensures that the Google API client (gapi) is  initialized when the google calendar component is rendered. 
+ * ensures that the Google API client (gapi) is initialized when the google calendar component is rendered. 
  * We test that signing in makes us fetch the user's calendar events and displays upcoming events. 
  * We also make sure that signing out clears the events being displayed and restores the sign in button so 
  * that the user can authenticate again. 
  */
+
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import GoogleCalendar from "./GoogleCalendar";
+import { gapi } from "gapi-script"; 
 
 describe("GoogleCalendar Component", () => {
   beforeEach(() => {
