@@ -1,8 +1,9 @@
-// __mocks__/gapi-script.js
 export const gapi = {
-    load: jest.fn((lib, callback) => callback()),
+    load: jest.fn((_, callback) => {
+      callback();
+    }),
     client: {
-      init: jest.fn(),
+      init: jest.fn(() => Promise.resolve()),
       calendar: {
         events: {
           list: jest.fn(),
@@ -11,8 +12,8 @@ export const gapi = {
     },
     auth2: {
       getAuthInstance: jest.fn(() => ({
-        signIn: jest.fn(),
-        signOut: jest.fn(),
+        signIn: jest.fn(() => Promise.resolve()),
+        signOut: jest.fn(() => Promise.resolve()),
       })),
     },
   };

@@ -1,26 +1,37 @@
-// jest-dom adds custom jest matchers for asserting on DOM nodes.
-// allows you to do things like:
-// expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+// sets up a global mock for the gapi-script library to test components that use the Google Calendar API without using the actual API
 
-jest.mock('gapi-script', () => ({
-    gapi: {
-      load: jest.fn((lib, callback) => callback()),
-      client: {
-        init: jest.fn(),
-        calendar: {
-          events: {
-            list: jest.fn(),
+// mock of the global gapi object used by the Google API client
+global.gapi = {
+  load: jest.fn((lib, callback) => callback()),
+
+  client: {    // mock the gapi.client object (contains the actual api services)
+    init: jest.fn(() => Promise.resolve()),   // returning that we successfully set up without actually using the API
+
+    calendar: {   // mock the list of calendar events provided by the real api 
+      events: {
+        list: jest.fn(() => Promise.resolve({
+          result: {
+            items: [], // returns an empty list of calendar events
           },
-        },
-      },
-      auth2: {
-        getAuthInstance: jest.fn(() => ({
-          signIn: jest.fn(),
-          signOut: jest.fn(),
         })),
       },
     },
-  }));
-  
+  },
+
+  // dummy signIn and signOut methods
+  auth2: {
+    getAuthInstance: jest.fn(() => ({
+      signIn: jest.fn(() => Promise.resolve()),
+      signOut: jest.fn(() => Promise.resolve()),
+      isSignedIn: {
+        get: jest.fn(() => false),
+      },
+    })),
+  },
+};
+
+// replace the "gapi-script" module with our gapi mock for testing reasons 
+jest.mock('gapi-script', () => ({
+  gapi: global.gapi,
+}));
