@@ -2,34 +2,42 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import GoogleCalendar from "./GoogleCalendar";
-import { gapi } from "gapi-script"; // Safe to import after mocking above
+import { gapi } from "gapi-script"; 
 
-// Test suite for GoogleCalendar Component
+/**
+ * This is a test suite for the GoogleCalendar component.
+ * It checks that the "Sign in with Google" button shows up when the user is not signed in, and 
+ * ensures that the Google API client (gapi) is  initialized when the google calendar component is rendered. 
+ * We test that signing in makes us fetch the user's calendar events and displays upcoming events. 
+ * We also make sure that signing out clears the events being displayed and restores the sign in button so 
+ * that the user can authenticate again. 
+ */
+
 describe("GoogleCalendar Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
+  // tests if the sign in button renders when the user is not signed in
   it("renders sign in button when not signed in", () => {
     render(<GoogleCalendar />);
     expect(screen.getByText(/sign in with google/i)).toBeInTheDocument();
   });
 
-  it("calls gapi.load and gapi.client.init on mount", async () => {
+  // tests if gapi.load is called on we render the google calendar component and gapi.client.init is then called
+  it("calls gapi.load and gapi.client.init", async () => {
     render(<GoogleCalendar />);
-  
-    // 1. Check that gapi.load was called correctly
     expect(gapi.load).toHaveBeenCalledWith("client:auth2", expect.any(Function));
   
-    // 2. Explicitly wait for gapi.client.init to be called
     await waitFor(() => {
       expect(gapi.client.init).toHaveBeenCalled();
     });
   });
 
+  // tests if we actually sign in and then fetch events after clicking the sign in button
   it("signs in and fetches events when clicking sign in button", async () => {
     const mockSignIn = jest.fn(() => Promise.resolve());
-    const mockList = jest.fn(() => Promise.resolve({
+    const mockList = jest.fn(() => Promise.resolve({  // retrieve mock items
       result: {
         items: [
           { id: "1", summary: "Event 1", start: { dateTime: "2024-04-28T10:00:00Z" } },
@@ -45,17 +53,22 @@ describe("GoogleCalendar Component", () => {
 
     render(<GoogleCalendar />);
 
+    // render the google calendar
     fireEvent.click(screen.getByText(/sign in with google/i));
-
     await waitFor(() => expect(mockSignIn).toHaveBeenCalled());
 
+    // event should appear after sign in
     expect(await screen.findByText(/Event 1 \(2024-04-28T10:00:00Z\)/)).toBeInTheDocument();
     expect(screen.getByText(/Event 2 \(2024-04-29\)/)).toBeInTheDocument();
   });
 
+
+  // tests signing out and removing all the displayed events of the user's calendar
   it("signs out and clears events when clicking sign out button", async () => {
-    const mockSignIn = jest.fn(() => Promise.resolve());
+    const mockSignIn = jest.fn(() => Promise.resolve()); // sign in and sign out mocks
     const mockSignOut = jest.fn(() => Promise.resolve());
+
+    // mock the calendar events list to return a single test event
     const mockList = jest.fn(() => Promise.resolve({
       result: {
         items: [{ id: "1", summary: "Test Event", start: { date: "2024-04-30" } }],
@@ -76,7 +89,7 @@ describe("GoogleCalendar Component", () => {
     await waitFor(() => {
       expect(mockSignOut).toHaveBeenCalled();
       expect(screen.queryByText(/Test Event \(2024-04-30\)/)).not.toBeInTheDocument();
-      expect(screen.getByText(/sign in with google/i)).toBeInTheDocument();
+      expect(screen.getByText(/sign in with google/i)).toBeInTheDocument(); // sign-in button should be back
     });
   });
 });
