@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import GoogleCalendar from "./GoogleCalendar";
 jest.mock("gapi-script");
 
-// Mock the gapi object
+// Mock the gapi object using jest
 jest.mock("gapi-script", () => ({
   gapi: {
     load: jest.fn((lib, callback) => callback()),
@@ -22,6 +22,7 @@ jest.mock("gapi-script", () => ({
   },
 }));
 
+// Test suite for GoogleCalendar Component
 describe("GoogleCalendar Component", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -51,7 +52,9 @@ describe("GoogleCalendar Component", () => {
       },
     }));
 
+    // Set up mock authentication instance
     gapi.auth2.getAuthInstance.mockReturnValue({ signIn: mockSignIn, signOut: jest.fn() });
+    // Set up mock calendar list
     gapi.client.calendar.events.list = mockList;
 
     render(<GoogleCalendar />);
@@ -91,6 +94,8 @@ describe("GoogleCalendar Component", () => {
     // Now sign out
     fireEvent.click(screen.getByText("Sign out"));
 
+    // Verify sign out was called and 
+    // the event is not displayed and sign-in button is back
     await waitFor(() => {
       expect(mockSignOut).toHaveBeenCalled();
       expect(screen.queryByText("Test Event (2024-04-30)")).not.toBeInTheDocument();
