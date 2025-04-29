@@ -12,6 +12,7 @@ server/tests/unit/
 ├── calendarService.test.js # Tests for Google Calendar integration
 ├── taskOperations.test.js  # Tests for task CRUD operations
 └── updateSchedule.test.js  # End-to-end tests for schedule updates
+└── onboardingAuthenticationUI.test.js # Unit tests for user onboarding and authentication
 ```
 
 ### Running Tests
