@@ -70,6 +70,18 @@ describe('Task CRUD Operations', () => {
         .rejects
         .toThrow('Required fields missing');
     });
+
+    test('should reject task if startTime or endTime is not a valid Date object', async () => {
+      const invalidTask = {
+        title: 'Invalid Date Task',
+        startTime: '2024-03-15T10:00:00', // String instead of Date object
+        endTime: '2024-03-15T11:00:00'    // String instead of Date object
+      };
+
+      await expect(taskManager.addTask(invalidTask))
+        .rejects
+        .toThrow('Start time and end time must be Date objects');
+    });
   });
 
   describe('Edit Task', () => {
