@@ -2,7 +2,7 @@
 
 ## Test Suite
 
-The test suite for this project is located in the `server/tests/unit/` directory. The tests are organized by component:
+The test suite for this project is located in the `tests` directory. The tests are organized by component:
 
 ### Test Files Structure
 ```
@@ -12,12 +12,21 @@ server/tests/unit/
 ├── calendarService.test.js # Tests for Google Calendar integration
 ├── taskOperations.test.js  # Tests for task CRUD operations
 └── updateSchedule.test.js  # End-to-end tests for schedule updates
+
+client/tests/
+├── calendarService.test.js # Tests for Google Calendar Authentication
+
 ```
 
 ### Running Tests
 To run the test suite:
 ```bash
 cd server
+npm test
+```
+or
+```bash
+cd client
 npm test
 ```
 
