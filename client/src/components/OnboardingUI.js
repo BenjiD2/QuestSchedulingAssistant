@@ -9,7 +9,7 @@ import { useAuth0 } from "@auth0/auth0-react";
  *   and once `isAuthenticated` flips to true it renders the same "Hello, {name}" greeting.
  */
 export const OnboardingUI = ({ auth }) => {
-  // Always call hooks at the top level
+  // Call hooks at the top level
   const auth0 = useAuth0();
   const { isAuthenticated, loginWithRedirect, user } = auth0;
 
