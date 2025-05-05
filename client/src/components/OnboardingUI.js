@@ -4,15 +4,25 @@ import { useAuth0 } from "@auth0/auth0-react";
 /**
  * OnboardingUI Component
  * - **Test mode**: if you pass in an `auth` prop, it renders your welcome / Register & Login buttons
- *   or the “Hello, {name}” greeting based on `auth.isAuthenticated()`.
+ *   or the "Hello, {name}" greeting based on `auth.isAuthenticated()`.
  * - **Real mode**: redirects unauthenticated users into Auth0, shows spinner while logging in,
- *   and once `isAuthenticated` flips to true it renders the same “Hello, {name}” greeting.
+ *   and once `isAuthenticated` flips to true it renders the same "Hello, {name}" greeting.
  */
 export const OnboardingUI = ({ auth }) => {
+  // Always call hooks at the top level
+  const auth0 = useAuth0();
+  const { isAuthenticated, loginWithRedirect, user } = auth0;
+
+  useEffect(() => {
+    if (!auth && !isAuthenticated) {
+      loginWithRedirect();
+    }
+  }, [auth, isAuthenticated, loginWithRedirect]);
+
   // ─── Test mode ─────────────────────────────────────────────────────────────
   if (auth) {
     const isAuthed = auth.isAuthenticated();
-    const user     = auth.getUser?.() ?? {};
+    const testUser = auth.getUser?.() ?? {};
     if (!isAuthed) {
       return (
         <section>
@@ -22,18 +32,10 @@ export const OnboardingUI = ({ auth }) => {
         </section>
       );
     }
-    return <h1>Hello, {user.name}</h1>;
+    return <h1>Hello, {testUser.name}</h1>;
   }
 
   // ─── Real mode ─────────────────────────────────────────────────────────────
-  const { isAuthenticated, loginWithRedirect, user } = useAuth0();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      loginWithRedirect();
-    }
-  }, [isAuthenticated, loginWithRedirect]);
-
   // still logging in?
   if (!isAuthenticated) {
     return (
