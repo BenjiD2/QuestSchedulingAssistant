@@ -1,10 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './Dashboard.css';
 import { useAuth0 } from "@auth0/auth0-react";
+import TaskForm from './TaskForm';
+import Profile from './Profile';
 
 export const HomePageUI = ({ user, tasks: propTasks }) => {
-  const [activeTab, setActiveTab]        = useState('calendar');
+  const [activeTab, setActiveTab] = useState('tasks');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [tasks, setTasks] = useState([]);
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
 
@@ -17,6 +22,60 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [profileMenuRef]);
+
+  useEffect(() => {
+    if (Array.isArray(propTasks)) {
+      setTasks(propTasks);
+    }
+  }, [propTasks]);
+
+  const handleAddTask = (taskData) => {
+    const newTask = {
+      taskId: crypto.randomUUID(),
+      ...taskData,
+      completed: false
+    };
+    setTasks([...tasks, newTask]);
+    setShowTaskForm(false);
+  };
+
+  const handleEditTask = (taskData) => {
+    setTasks(tasks.map(task => 
+      task.taskId === editingTask.taskId ? { ...task, ...taskData } : task
+    ));
+    setEditingTask(null);
+    setShowTaskForm(false);
+  };
+
+  const handleDeleteTask = (taskId) => {
+    setTasks(tasks.filter(task => task.taskId !== taskId));
+  };
+
+  const handleCompleteTask = (taskId) => {
+    setTasks(tasks.map(task => {
+      if (task.taskId === taskId) {
+        const xpGained = calculateTaskXP(task);
+        user.addXP(xpGained);
+        return { ...task, completed: true };
+      }
+      return task;
+    }));
+  };
+
+  const calculateTaskXP = (task) => {
+    // Base XP: 10 points per 30 minutes
+    const baseXP = (task.duration / 30) * 10;
+    
+    // Category multipliers
+    const multipliers = {
+      work: 1.5,
+      study: 1.3,
+      exercise: 1.4,
+      default: 1.0
+    };
+    
+    return Math.round(baseXP * (multipliers[task.category] || 1.0));
+  };
 
   if (Array.isArray(propTasks)) {
     return (
@@ -34,7 +93,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     );
   }
 
-  // ─── REAL MODE: your full Dashboard UI unchanged ────────────────────────
+  // ─── REAL MODE: full Dashboard UI unchanged ────────────────────────
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
@@ -56,14 +115,6 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     { id: 1, title: 'Team Meeting', time: '09:00 - 10:30', location: 'Conference Room A', color: 'blue' },
     { id: 2, title: 'Project Review', time: '14:00 - 15:00', location: 'Zoom Call', color: 'green' },
     { id: 3, title: 'Client Call', time: '16:30 - 17:00', location: 'Phone', color: 'purple' }
-  ];
-
-  const tasks = [
-    { id: 1, title: 'Update presentation slides', completed: true, category: 'work' },
-    { id: 2, title: 'Send follow-up emails', completed: false, category: 'communication' },
-    { id: 3, title: 'Schedule client meeting', completed: true, category: 'planning' },
-    { id: 4, title: 'Prepare quarterly report', completed: false, category: 'work' },
-    { id: 5, title: 'Review marketing proposals', completed: true, category: 'work' }
   ];
 
   const completedTasks = tasks.filter(task => task.completed);
@@ -97,9 +148,9 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const questProgress = 65;
   const questGoal = 100;
   const achievements = [
-    { icon: 'Fire', name: 'On Fire', description: '7-day streak' },
-    { icon: 'Star', name: 'Super Achiever', description: 'Completed 5 tasks today' },
-    { icon: 'Rocket', name: 'Productivity Master', description: 'Completed all tasks yesterday' }
+    { icon: '🔥', name: 'On Fire', description: '7-day streak' },
+    { icon: '⭐', name: 'Super Achiever', description: 'Completed 5 tasks today' },
+    { icon: '🚀', name: 'Productivity Master', description: 'Completed all tasks yesterday' }
   ];
 
   // Build calendarDays array…
@@ -222,13 +273,19 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
               <p>tasks</p>
               <p className="completed-count">{completedTasks.length} completed</p>
             </div>
-            <button className="add-task-button">
+            <button className="add-task-button" onClick={() => setShowTaskForm(true)}>
               <span className="plus-icon">+</span> Add Task
             </button>
             <div className="tasks-list">
               {tasks.map(task => (
-                <div className="task-item" key={task.id}>
-                  <div className="task-checkbox">
+                <div 
+                  key={task.taskId} 
+                  className={`task-item ${task.completed ? 'completed' : ''}`}
+                >
+                  <div 
+                    className="task-checkbox"
+                    onClick={() => !task.completed && handleCompleteTask(task.taskId)}
+                  >
                     {task.completed ? (
                       <span className="checked">✓</span>
                     ) : (
@@ -236,12 +293,31 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
                     )}
                   </div>
                   <div className="task-content">
-                    <p className={`task-title ${task.completed ? 'completed' : ''}`}>
-                      {task.title}
-                    </p>
-                    <span className={`task-category ${task.category}`}>
-                      {task.category}
-                    </span>
+                    <h3 className="task-title">{task.title}</h3>
+                    <p className="task-description">{task.description}</p>
+                    <div className="task-details">
+                      <span className="task-duration">⏱️ {task.duration} min</span>
+                      <span className="task-category">{task.category}</span>
+                      {!task.completed && (
+                        <div className="task-actions">
+                          <button 
+                            className="edit-button"
+                            onClick={() => {
+                              setEditingTask(task);
+                              setShowTaskForm(true);
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="delete-button"
+                            onClick={() => handleDeleteTask(task.taskId)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -249,8 +325,67 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
           </div>
         </div>
 
-        {/* ...the rest of your calendar, gamification, weekly overview, insights as before... */}
+        <div className="dashboard-row">
+            {/* Gamification */}
+            <div className="dashboard-card gamification-card">
+                <div className="card-header">
+                <h2>Progress</h2>
+                <span className="trophy-icon">🏆</span>
+                </div>
+                <div className="level-info">
+                <div className="level-badge">Level {currentLevel}</div>
+                <div className="xp-progress">
+                    <div className="progress-header">
+                    <span>XP Progress</span>
+                    <span className="progress-value">{questProgress}/{questGoal}</span>
+                    </div>
+                    <div className="progress-bar">
+                    <div 
+                        className="progress" 
+                        style={{ width: `${(questProgress / questGoal) * 100}%` }}
+                    ></div>
+                    </div>
+                </div>
+                </div>
+                <div className="streak-container">
+                <div className="streak-info">
+                    <span className="streak-flame">🔥</span>
+                    <div className="streak-count">
+                    <h3>{streakDays}</h3>
+                    <p>Day Streak</p>
+                    </div>
+                </div>
+                </div>
+                <div className="achievements-section">
+                <h3>Recent Achievements</h3>
+                <div className="achievements-list">
+                    {achievements.map((achievement, index) => (
+                    <div key={index} className="achievement-item">
+                        <span className="achievement-icon">{achievement.icon}</span>
+                        <div className="achievement-details">
+                        <h4 className="achievement-name">{achievement.name}</h4>
+                        <p className="achievement-description">{achievement.description}</p>
+                        </div>
+                    </div>
+                    ))}
+                </div>
+                </div>
+            </div>
+        </div>
       </div>
+
+      {showTaskForm && (
+        <TaskForm
+          task={editingTask}
+          onSubmit={editingTask ? handleEditTask : handleAddTask}
+          onClose={() => {
+            setShowTaskForm(false);
+            setEditingTask(null);
+          }}
+        />
+      )}
     </div>
   );
 };
+
+export default HomePageUI;
