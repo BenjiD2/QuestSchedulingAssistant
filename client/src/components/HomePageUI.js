@@ -1,8 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './Dashboard.css';
+import { useAuth0 } from "@auth0/auth0-react";
 
-const Dashboard = () => {
+export const HomePageUI = ({ user }) => {
   const [activeTab, setActiveTab] = useState('calendar');
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
+  const { logout } = useAuth0();
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    logout({ logoutParams: { returnTo: window.location.origin } });
+  };
+
+  const handleEditAccount = () => {
+    // Open Auth0's account management page
+    window.open('https://manage.auth0.com/manage-users', '_blank');
+  };
   
   // Sample data
   const todayDate = new Date();
@@ -30,12 +57,15 @@ const Dashboard = () => {
   const completedTasks = tasks.filter(task => task.completed);
   
   // Calendar data
+  // eslint-disable-next-line no-unused-vars
   const currentMonth = todayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1).getDay();
   
   // Weekly data
+  // eslint-disable-next-line no-unused-vars
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  // eslint-disable-next-line no-unused-vars
   const currentDate = todayDate.getDate();
   
   const weeklyEvents = [
@@ -61,9 +91,9 @@ const Dashboard = () => {
   const questProgress = 65;
   const questGoal = 100;
   const achievements = [
-    { icon: '🔥', name: 'On Fire', description: '7-day streak' },
-    { icon: '⭐', name: 'Super Achiever', description: 'Completed 5 tasks today' },
-    { icon: '🚀', name: 'Productivity Master', description: 'Completed all tasks yesterday' }
+    { icon: 'Fire', name: 'On Fire', description: '7-day streak' },
+    { icon: 'Star', name: 'Super Achiever', description: 'Completed 5 tasks today' },
+    { icon: 'Rocket', name: 'Productivity Master', description: 'Completed all tasks yesterday' }
   ];
   
   // Generate calendar days
@@ -86,23 +116,58 @@ const Dashboard = () => {
     calendarDays.push({ day: i, currentMonth: false });
   }
 
+  // CSS styles for profile dropdown
+  const profileMenuStyle = {
+    position: 'absolute',
+    top: '60px',
+    right: '0',
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    width: '200px',
+    zIndex: 100,
+    overflow: 'hidden',
+    display: showProfileMenu ? 'block' : 'none'
+  };
+
+  const menuItemStyle = {
+    padding: '12px 16px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    transition: 'background-color 0.2s ease'
+  };
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
         <h1>Dashboard</h1>
         <div className="header-actions">
-          <button className="theme-toggle">
-            <span className="icon">☀️</span>
-          </button>
-          <div className="notifications">
-            <span className="icon">🔔</span>
-            <span className="notification-badge">3</span>
-          </div>
-          <div className="user-profile">
-            <div className="avatar">JD</div>
+          <div className="user-profile" ref={profileMenuRef} style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setShowProfileMenu(!showProfileMenu)}>
+            <div className="avatar">{user ? user.name.substring(0, 2).toUpperCase() : 'JD'}</div>
             <div className="user-info">
-              <div className="user-name">John Doe</div>
-              <div className="user-role">Product Manager</div>
+              <div className="user-name">{user ? user.name : 'John Doe'}</div>
+              <div className="user-role">{user ? user.email : 'Product Manager'}</div>
+            </div>
+            
+            {/* Profile Dropdown Menu */}
+            <div style={profileMenuStyle}>
+              <div 
+                style={{...menuItemStyle}}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                onClick={handleEditAccount}
+              >
+                Edit Account
+              </div>
+              <div 
+                style={{...menuItemStyle}}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                onClick={handleLogout}
+              >
+                Logout
+              </div>
             </div>
           </div>
         </div>
@@ -114,7 +179,7 @@ const Dashboard = () => {
           <div className="dashboard-card schedule-card">
             <div className="card-header">
               <h2>Today's Schedule</h2>
-              <span className="time-icon">🕒</span>
+              <span className="time-icon"></span>
             </div>
             <div className="today-date">
               <h3>{formattedDate}</h3>
@@ -140,7 +205,7 @@ const Dashboard = () => {
           <div className="dashboard-card tasks-card">
             <div className="card-header">
               <h2>Tasks</h2>
-              <span className="check-icon">✓</span>
+              <span className="check-icon"></span>
             </div>
             <div className="tasks-count">
               <h3>{tasks.length}</h3>
@@ -171,7 +236,7 @@ const Dashboard = () => {
           <div className="dashboard-card calendar-card-small">
             <div className="card-header">
               <h2>Calendar</h2>
-              <span className="calendar-icon">📅</span>
+              <span className="calendar-icon"></span>
             </div>
             <div className="calendar">
               <div className="calendar-nav">
@@ -204,12 +269,12 @@ const Dashboard = () => {
           <div className="dashboard-card gamification-card">
             <div className="card-header">
               <h2>Quest Progress</h2>
-              <span className="gamification-icon">🏆</span>
+              <span className="gamification-icon"></span>
             </div>
             
             <div className="streak-container">
               <div className="streak-info">
-                <div className="streak-flame">🔥</div>
+                <div className="streak-flame"></div>
                 <div className="streak-count">
                   <h3>{streakDays}</h3>
                   <p>day streak</p>
@@ -328,6 +393,4 @@ const Dashboard = () => {
       </div>
     </div>
   );
-};
-
-export default Dashboard; 
+}; 
