@@ -1,4 +1,3 @@
-
 /**
  * Unit tests for the GoogleCalendar component.
  * It checks that the "Sign in with Google" button shows up when the user is not signed in, and 
@@ -11,7 +10,7 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import GoogleCalendar from "./GoogleCalendar";
-import { gapi } from "gapi-script"; 
+import { gapi } from "gapi-script";
 
 describe("GoogleCalendar Component", () => {
   beforeEach(() => {
@@ -26,11 +25,20 @@ describe("GoogleCalendar Component", () => {
 
   // tests if gapi.load is called on we render the google calendar component and gapi.client.init is then called
   it("calls gapi.load and gapi.client.init", async () => {
+    // Mock the callback function that gapi.load will call
+    const mockCallback = jest.fn();
+    global.gapi.load.mockImplementation((api, callback) => {
+      callback(); // Immediately call the callback
+    });
+
     render(<GoogleCalendar />);
-    expect(gapi.load).toHaveBeenCalledWith("client:auth2", expect.any(Function));
-  
+
+    // Check that gapi.load was called with correct parameters
+    expect(global.gapi.load).toHaveBeenCalledWith("client:auth2", expect.any(Function));
+
+    // Wait for and verify that init was called
     await waitFor(() => {
-      expect(gapi.client.init).toHaveBeenCalled();
+      expect(global.gapi.client.init).toHaveBeenCalled();
     });
   });
 

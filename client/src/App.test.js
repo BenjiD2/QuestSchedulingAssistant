@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
-jest.mock('gapi-script');
+// jest.mock('gapi-script');
 
 test('renders dashboard header', () => {
   render(<App />);

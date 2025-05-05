@@ -1,6 +1,20 @@
 import '@testing-library/jest-dom';
 // sets up a global mock for the gapi-script library to test components that use the Google Calendar API without using the actual API
 
+// Mock Auth0
+jest.mock('@auth0/auth0-react', () => ({
+  useAuth0: () => ({
+    isAuthenticated: true,
+    isLoading: false,
+    user: {
+      name: 'Test User',
+      email: 'test@example.com'
+    },
+    loginWithRedirect: jest.fn(),
+    logout: jest.fn()
+  })
+}));
+
 // mock of the global gapi object used by the Google API client
 global.gapi = {
   load: jest.fn((lib, callback) => callback()),
