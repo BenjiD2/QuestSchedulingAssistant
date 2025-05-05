@@ -12,6 +12,12 @@ import { Auth } from '../../../client/src/utils/Auth';
 
 // Mock Auth class to control authentication state
 jest.mock('../../../client/src/utils/Auth');
+// mock the Auth0 hook so HomePageUI's `useAuth0()` call won't fail
+jest.mock('@auth0/auth0-react', () => ({
+  useAuth0: () => ({
+    logout: jest.fn(),    // HomePageUI immediately does `const { logout } = useAuth0()`
+  }),
+}));
 
 const mockAuth = {
   isAuthenticated: jest.fn(),
