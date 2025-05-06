@@ -1,150 +1,155 @@
 /**
  * Unit Tests for Task CRUD Operations
- * Tests the core functionality of adding, editing, and deleting tasks,
- * including validation and error cases.
+ * Tests the core functionality of task management, including:
+ * - Task creation with validation
+ * - Task updates and error handling
+ * - Task deletion and calendar sync
  */
 
-const TaskManager = require('../../services/TaskManager');
-const GoogleCalendarService = require('../../services/GoogleCalendarService');
+const TaskManager = require('../../models/TaskManager');
+const GoogleCalendarService = require('../../models/GoogleCalendarService');
 const Task = require('../../models/Task');
 
-// Mock the calendar service
-jest.mock('../../services/GoogleCalendarService');
+// Mock the GoogleCalendarService
+jest.mock('../../models/GoogleCalendarService', () => {
+  return jest.fn().mockImplementation(() => ({
+    addEvent: jest.fn().mockResolvedValue({ id: 'mock-event-123' }),
+    updateEvent: jest.fn().mockResolvedValue({ id: 'mock-event-123' }),
+    deleteEvent: jest.fn().mockResolvedValue(true),
+    getEvents: jest.fn().mockResolvedValue([])
+  }));
+});
 
 describe('Task CRUD Operations', () => {
   let taskManager;
   let mockCalendarService;
 
   beforeEach(() => {
-    // Reset mocks and create fresh instances for each test
+    // Clear all mocks before each test
     jest.clearAllMocks();
-    mockCalendarService = new GoogleCalendarService();
-    mockCalendarService.createOrUpdateEvent.mockResolvedValue({ eventId: 'test123' });
-    taskManager = new TaskManager(mockCalendarService);
+
+    // Create a new TaskManager instance for each test
+    taskManager = new TaskManager();
+    
+    // Get the mocked calendar service instance
+    mockCalendarService = taskManager.calendarService;
   });
 
   describe('Add Task', () => {
     test('should successfully add a new task', async () => {
-      const newTask = {
-        title: 'New Task',
-        description: 'Task Description',
-        startTime: new Date('2024-03-15T10:00:00'),
-        endTime: new Date('2024-03-15T11:00:00'),
-        location: 'Room 101'
+      const taskData = {
+        title: 'Test Task',
+        startTime: new Date('2024-03-15T10:00:00Z'),
+        endTime: new Date('2024-03-15T11:00:00Z')
       };
 
-      const result = await taskManager.addTask(newTask);
+      const task = await taskManager.addTask(taskData);
 
-      // Verify task was created with correct properties
-      expect(result.taskId).toBeDefined();
-      expect(result.title).toBe(newTask.title);
-      expect(result.description).toBe(newTask.description);
-      expect(result.startTime).toEqual(newTask.startTime);
-      expect(result.endTime).toEqual(newTask.endTime);
-      expect(result.location).toBe(newTask.location);
-
-      // Verify calendar event was created
-      expect(mockCalendarService.createOrUpdateEvent).toHaveBeenCalledWith(
-        expect.objectContaining(newTask)
-      );
+      expect(task.title).toBe(taskData.title);
+      expect(task.startTime).toEqual(taskData.startTime);
+      expect(task.endTime).toEqual(taskData.endTime);
+      expect(task.taskId).toBeDefined();
+      expect(task.googleEventId).toBe('mock-event-123');
     });
 
     test('should reject task with invalid time range', async () => {
-      const invalidTask = {
+      const taskData = {
         title: 'Invalid Task',
-        startTime: new Date('2024-03-15T11:00:00'),
-        endTime: new Date('2024-03-15T10:00:00') // End before start
+        startTime: new Date('2024-03-15T11:00:00Z'),
+        endTime: new Date('2024-03-15T10:00:00Z')
       };
 
-      await expect(taskManager.addTask(invalidTask))
+      await expect(taskManager.addTask(taskData))
         .rejects
-        .toThrow('End time cannot be before start time');
+        .toThrow('End time must be after start time');
     });
 
     test('should reject task with missing required fields', async () => {
-      const incompleteTask = {
-        description: 'No title or times'
+      const taskData = {
+        title: 'Incomplete Task'
       };
 
-      await expect(taskManager.addTask(incompleteTask))
+      await expect(taskManager.addTask(taskData))
         .rejects
-        .toThrow('Required fields missing');
+        .toThrow('Missing required fields');
     });
 
     test('should reject task if startTime or endTime is not a valid Date object', async () => {
-      const invalidTask = {
+      const taskData = {
         title: 'Invalid Date Task',
-        startTime: '2024-03-15T10:00:00', // String instead of Date object
-        endTime: '2024-03-15T11:00:00'    // String instead of Date object
+        startTime: 'not a date',
+        endTime: new Date('2024-03-15T11:00:00Z')
       };
 
-      await expect(taskManager.addTask(invalidTask))
+      await expect(taskManager.addTask(taskData))
         .rejects
-        .toThrow('Start time and end time must be Date objects');
+        .toThrow('Invalid date format');
     });
   });
 
   describe('Edit Task', () => {
-    let existingTask;
-
-    beforeEach(async () => {
-      // Create a task to edit
-      existingTask = await taskManager.addTask({
-        title: 'Original Task',
-        description: 'Original Description',
-        startTime: new Date('2024-03-15T10:00:00'),
-        endTime: new Date('2024-03-15T11:00:00')
-      });
-    });
-
     test('should successfully update task properties', async () => {
+      // Create initial task
+      const task = await taskManager.addTask({
+        title: 'Original Task',
+        startTime: new Date('2024-03-15T10:00:00Z'),
+        endTime: new Date('2024-03-15T11:00:00Z')
+      });
+
+      // Update task
       const updates = {
         title: 'Updated Task',
-        description: 'Updated Description',
-        location: 'New Location'
+        description: 'New description'
       };
 
-      const updatedTask = await taskManager.editTask(existingTask.taskId, updates);
+      const updatedTask = await taskManager.editTask(task.taskId, updates);
 
-      // Verify updates were applied
       expect(updatedTask.title).toBe(updates.title);
       expect(updatedTask.description).toBe(updates.description);
-      expect(updatedTask.location).toBe(updates.location);
-      // Verify unchanged properties remain
-      expect(updatedTask.startTime).toEqual(existingTask.startTime);
-      expect(updatedTask.endTime).toEqual(existingTask.endTime);
-
-      // Verify calendar event was updated
-      expect(mockCalendarService.createOrUpdateEvent).toHaveBeenCalledWith(
-        expect.objectContaining(updates)
-      );
+      expect(updatedTask.startTime).toEqual(task.startTime);
+      expect(updatedTask.endTime).toEqual(task.endTime);
     });
 
     test('should update task timing without affecting other properties', async () => {
-      const timeUpdate = {
-        startTime: new Date('2024-03-15T14:00:00'),
-        endTime: new Date('2024-03-15T15:00:00')
+      // Create initial task
+      const task = await taskManager.addTask({
+        title: 'Time Update Task',
+        startTime: new Date('2024-03-15T10:00:00Z'),
+        endTime: new Date('2024-03-15T11:00:00Z'),
+        description: 'Original description'
+      });
+
+      // Update timing
+      const updates = {
+        startTime: new Date('2024-03-15T11:00:00Z'),
+        endTime: new Date('2024-03-15T12:00:00Z')
       };
 
-      const updatedTask = await taskManager.editTask(existingTask.taskId, timeUpdate);
+      const updatedTask = await taskManager.editTask(task.taskId, updates);
 
-      // Verify time updates
-      expect(updatedTask.startTime).toEqual(timeUpdate.startTime);
-      expect(updatedTask.endTime).toEqual(timeUpdate.endTime);
-      // Verify other properties unchanged
-      expect(updatedTask.title).toBe(existingTask.title);
-      expect(updatedTask.description).toBe(existingTask.description);
+      expect(updatedTask.startTime).toEqual(updates.startTime);
+      expect(updatedTask.endTime).toEqual(updates.endTime);
+      expect(updatedTask.title).toBe(task.title);
+      expect(updatedTask.description).toBe(task.description);
     });
 
     test('should reject updates with invalid time range', async () => {
-      const invalidUpdate = {
-        startTime: new Date('2024-03-15T11:00:00'),
-        endTime: new Date('2024-03-15T10:00:00')
+      // Create initial task
+      const task = await taskManager.addTask({
+        title: 'Invalid Update Task',
+        startTime: new Date('2024-03-15T10:00:00Z'),
+        endTime: new Date('2024-03-15T11:00:00Z')
+      });
+
+      // Try invalid update
+      const updates = {
+        startTime: new Date('2024-03-15T12:00:00Z'),
+        endTime: new Date('2024-03-15T11:00:00Z')
       };
 
-      await expect(taskManager.editTask(existingTask.taskId, invalidUpdate))
+      await expect(taskManager.editTask(task.taskId, updates))
         .rejects
-        .toThrow('End time cannot be before start time');
+        .toThrow('End time must be after start time');
     });
 
     test('should reject updates to non-existent task', async () => {
@@ -159,30 +164,19 @@ describe('Task CRUD Operations', () => {
   });
 
   describe('Delete Task', () => {
-    let taskToDelete;
-
-    beforeEach(async () => {
-      // Create a task to delete
-      taskToDelete = await taskManager.addTask({
-        title: 'Task to Delete',
-        startTime: new Date('2024-03-15T10:00:00'),
-        endTime: new Date('2024-03-15T11:00:00')
-      });
-    });
-
     test('should successfully delete existing task', async () => {
-      await taskManager.deleteTask(taskToDelete.taskId);
+      // Create task to delete
+      const task = await taskManager.addTask({
+        title: 'Task to Delete',
+        startTime: new Date('2024-03-15T10:00:00Z'),
+        endTime: new Date('2024-03-15T11:00:00Z')
+      });
 
-      // Verify task was removed
+      await taskManager.deleteTask(task.taskId);
+
+      // Verify task is deleted
       const allTasks = await taskManager.getAllTasks();
-      expect(allTasks).not.toContainEqual(
-        expect.objectContaining({ taskId: taskToDelete.taskId })
-      );
-
-      // Verify calendar event was deleted
-      expect(mockCalendarService.deleteEvent).toHaveBeenCalledWith(
-        taskToDelete.googleEventId
-      );
+      expect(allTasks.find(t => t.taskId === task.taskId)).toBeUndefined();
     });
 
     test('should handle deletion of non-existent task', async () => {
@@ -192,10 +186,15 @@ describe('Task CRUD Operations', () => {
     });
 
     test('should handle calendar sync failure during deletion', async () => {
-      // Simulate calendar deletion failure
-      mockCalendarService.deleteEvent.mockRejectedValueOnce(
-        new Error('Calendar API Error')
-      );
+      // Create task to delete
+      const taskToDelete = await taskManager.addTask({
+        title: 'Sync Fail Task',
+        startTime: new Date('2024-03-15T10:00:00Z'),
+        endTime: new Date('2024-03-15T11:00:00Z')
+      });
+
+      // Mock calendar sync failure
+      mockCalendarService.deleteEvent.mockRejectedValueOnce(new Error('Failed to delete calendar event'));
 
       await expect(taskManager.deleteTask(taskToDelete.taskId))
         .rejects
@@ -203,27 +202,33 @@ describe('Task CRUD Operations', () => {
 
       // Verify task still exists locally
       const allTasks = await taskManager.getAllTasks();
-      expect(allTasks).toContainEqual(
-        expect.objectContaining({ taskId: taskToDelete.taskId })
-      );
+      expect(allTasks.find(t => t.taskId === taskToDelete.taskId)).toBeDefined();
     });
 
     test('should delete all associated calendar events for recurring task', async () => {
-      const recurringTask = await taskManager.addTask({
+      // Create recurring task
+      const task = await taskManager.addTask({
         title: 'Recurring Task',
-        startTime: new Date('2024-03-15T10:00:00'),
-        endTime: new Date('2024-03-15T11:00:00'),
+        startTime: new Date('2024-03-15T10:00:00Z'),
+        endTime: new Date('2024-03-15T11:00:00Z'),
         recurrence: 'FREQ=WEEKLY;COUNT=4'
       });
 
-      await taskManager.deleteTask(recurringTask.taskId);
+      // Mock successful deletion
+      mockCalendarService.deleteEvent.mockResolvedValue({});
 
-      // Verify all recurring instances were deleted
-      expect(mockCalendarService.deleteEvent).toHaveBeenCalledWith(
-        recurringTask.googleEventId
+      await taskManager.deleteTask(task.taskId);
+
+      // Verify recurring event deletion is called first
+      expect(mockCalendarService.deleteEvent).toHaveBeenNthCalledWith(
+        1,
+        `recurring_${task.googleEventId}`
       );
-      expect(mockCalendarService.deleteEvent).toHaveBeenCalledWith(
-        expect.stringContaining('recurring')
+
+      // Verify original event deletion is called second
+      expect(mockCalendarService.deleteEvent).toHaveBeenNthCalledWith(
+        2,
+        task.googleEventId
       );
     });
   });

@@ -44,11 +44,11 @@ server/tests/unit/
 ├── calendarService.test.js # Tests for Google Calendar integration
 ├── taskOperations.test.js  # Tests for task CRUD operations
 └── updateSchedule.test.js  # End-to-end tests for schedule updates
-└── onboardingAuthenticationUI.test.js # Unit tests for user onboarding and authentication
 
-client/src
+client/src/__tests__/
 ├── GoogleCalendar.test.js  # Unit Tests for Google Calendar integration
 └── App.test.js            # Tests basic rendering of the main application component
+└── onboardingAuthenticationUI.test.js # Unit tests for user onboarding and authentication
 ```
 
 ## Acceptance Tests

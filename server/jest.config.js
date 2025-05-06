@@ -1,26 +1,35 @@
 module.exports = {
-  testEnvironment: 'jsdom',
-  transform: {
-    '^.+\\.(js|jsx)$': 'babel-jest',
-  },
-  moduleFileExtensions: ['js', 'jsx'],
-  setupFilesAfterEnv: ['./setupTests.js'],
-  transformIgnorePatterns: [
-    // Allow transpilation of client/src files for tests
-    '/node_modules/(?!(?:.+/)?client/src).+\\.js$'
+  projects: [
+    {
+      displayName: 'server',
+      testEnvironment: 'node',
+      testMatch: ['**/tests/unit/*.test.js'],
+      transform: {
+        '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './.babelrc' }]
+      },
+      setupFilesAfterEnv: ['./setupTests.js'],
+      testPathIgnorePatterns: ['/node_modules/'],
+      moduleFileExtensions: ['js', 'jsx', 'json']
+    },
+    {
+      displayName: 'client',
+      testEnvironment: 'jsdom',
+      testMatch: ['**/tests/unit/onboardingAuthenticationUI.test.js'],
+      transform: {
+        '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './.babelrc' }]
+      },
+      moduleNameMapper: {
+        '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+        '\\.(gif|ttf|eot|svg|png)$': '<rootDir>/__mocks__/fileMock.js'
+      },
+      setupFilesAfterEnv: ['./setupTests.js'],
+      testPathIgnorePatterns: ['/node_modules/'],
+      moduleFileExtensions: ['js', 'jsx', 'json']
+    }
   ],
-  moduleNameMapper: {
-    '\\.css$': 'identity-obj-proxy',
-    // ← new lines below
-    '^react$': '<rootDir>/../client/node_modules/react',
-    '^react-dom$': '<rootDir>/../client/node_modules/react-dom'
-  },
-  setupFilesAfterEnv: ['./setupTests.js'],
-  transformIgnorePatterns: [
-    '/node_modules/(?!(?:.+/)?client/src).+\\.js$'
-  ],
-  transform: {
-    '^.+\\.[jt]sx?$': 'babel-jest'
-  },
-  testEnvironment: 'jsdom'
+  verbose: true,
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov'],
+  testTimeout: 10000
 };

@@ -20,5 +20,14 @@
   "bugs": {
     "url": "https://github.com/BenjiD2/QuestSchedulingAssistant/issues"
   },
-  "homepage": "https://github.com/BenjiD2/QuestSchedulingAssistant#readme"
+  "homepage": "https://github.com/BenjiD2/QuestSchedulingAssistant#readme",
+  "devDependencies": {
+    "@babel/core": "^7.27.1",
+    "@babel/plugin-transform-runtime": "^7.27.1",
+    "@babel/preset-env": "^7.27.1",
+    "@babel/preset-react": "^7.27.1",
+    "babel-jest": "^29.7.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest-environment-jsdom": "^29.7.0"
+  }
 }
