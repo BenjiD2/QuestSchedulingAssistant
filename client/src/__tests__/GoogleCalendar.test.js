@@ -9,7 +9,8 @@
 
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import GoogleCalendar from "./GoogleCalendar";
+import '@testing-library/jest-dom';
+import GoogleCalendar from "../GoogleCalendar";
 import { gapi } from "gapi-script";
 
 describe("GoogleCalendar Component", () => {
@@ -89,7 +90,7 @@ describe("GoogleCalendar Component", () => {
     render(<GoogleCalendar />);
 
     fireEvent.click(screen.getByText(/sign in with google/i));
-    await waitFor(() => expect(screen.getByText(/Test Event \(2024-04-30\)/)).toBeInTheDocument());
+    await screen.findByText(/Test Event \(2024-04-30\)/);
 
     fireEvent.click(screen.getByText(/sign out/i));
     // Verify sign out was called and 
