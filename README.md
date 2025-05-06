@@ -6,49 +6,54 @@ To compile and set up the project:
 ```bash
 make install
 ```
+This will install dependencies for both client and server.
 
 2. Build the project:
 ```bash
 make build
 ```
-
 This will:
-- Install all necessary dependencies for both client and server
-- Create a production build of the React client
-- Set up the server environment
+- Build the React client
+- Install server dependencies
 
 ## Running the Application
 
-1. Start the client and server:
-
+1. Start both client and server:
 ```bash
 make start
 ```
-
-This will start the client on port 3000
+This will:
+- Start the server
+- Start the client on port 3000
 
 2. Access the application:
 - Open your browser and navigate to `http://localhost:3000`
 
-
-### Running All Tests
+### Running Tests
 ```bash
+# Run all tests (client and server)
 make test
+
+# Run only client tests
+make test-client
+
+# Run only server tests
+make test-server
 ```
 
 ### Test Files Structure
 ```
 server/tests/unit/
-├── task.test.js          # Unit tests for Task model
-├── taskManager.test.js   # Integration tests for TaskManager service
-├── calendarService.test.js # Tests for Google Calendar integration
-├── taskOperations.test.js  # Tests for task CRUD operations
-└── updateSchedule.test.js  # End-to-end tests for schedule updates
+├── task.test.js              # Unit tests for Task model
+├── taskManager.test.js       # Integration tests for TaskManager service
+├── calendarService.test.js   # Tests for Google Calendar integration
+├── taskOperations.test.js    # Tests for task CRUD operations
+└── updateSchedule.test.js    # End-to-end tests for schedule updates
 
 client/src/__tests__/
-├── GoogleCalendar.test.js  # Unit Tests for Google Calendar integration
-└── App.test.js            # Tests basic rendering of the main application component
-└── onboardingAuthenticationUI.test.js # Unit tests for user onboarding and authentication
+├── GoogleCalendar.test.js    # Unit Tests for Google Calendar integration
+├── App.test.js              # Tests basic rendering of the main application component
+└── onboardingAuthenticationUI.test.js  # Unit tests for user onboarding and authentication
 ```
 
 ## Acceptance Tests
@@ -60,16 +65,21 @@ Tests to check main functions
    - Expected: User is redirected to Google OAuth, then back to the app with their profile loaded
 
 2. Task Creation
-   - 
- 
+   - Input: Create a new task with title, start time, and end time
+   - Expected: Task is created and synced with Google Calendar
+   - Test cases:
+     * Valid time range: Should succeed
+     * Overlapping times: Should fail with conflict error
+     * Invalid time range (end before start): Should fail with validation error
+
 3. Authentication and onboarding UI
  
  | Scenario                          | Steps                                    | Expected outcome                                      |
  | --------------------------------- | ---------------------------------------- | ----------------------------------------------------- |
- | Unauthenticated onboarding screen | Navigate to `/` when not logged in       | “Welcome to QuestChampion” + Register & Login buttons |
+ | Unauthenticated onboarding screen | Navigate to `/` when not logged in       | "Welcome to QuestChampion" + Register & Login buttons |
  | Register button                   | Click **Register**                       | `auth.register()` is invoked                          |
  | Login button                      | Click **Login**                          | `auth.login()` is invoked                             |
- | Authenticated onboarding greeting | Simulate `auth.isAuthenticated() → true` | Displays “Hello, {user.name}”                         |
+ | Authenticated onboarding greeting | Simulate `auth.isAuthenticated() → true` | Displays "Hello, {user.name}"                         |
  | HomePage greeting & tasks         | Render `HomePageUI user={…} tasks=[…]`   | Renders `<h1>Hello, …</h1>` and correct `<li>` count  |
 
 
@@ -89,16 +99,28 @@ Tests to check main functions
  * **Jest config**
  
    * Mocks CSS imports via `identity-obj-proxy`.
-   * Maps React/React-DOM to client’s copy to avoid invalid hook calls.
+   * Maps React/React-DOM to client's copy to avoid invalid hook calls.
 
  * **Google Authenticate & Import Calendar**
     * Google OAuth 2.0 authentication flow
     * Automatic Google Calendar API client initialization
     * Calendar event fetching and display
- 
- ---
- 
- ## Team Contributions
+
+ * **Task Management & Scheduling**
+    * UTC-based date handling for consistent timezone operations
+    * Schedule conflict detection with timezone-aware comparisons
+    * Recurring task support with proper date handling
+    * Calendar sync with UTC timezone preservation
+    * Comprehensive error handling for date operations
+
+ * **Date and Time Handling**
+    * All dates stored and compared in UTC format
+    * Automatic timezone conversion for user display
+    * Validation for time ranges and schedule conflicts
+    * Support for back-to-back tasks without conflicts
+    * Proper handling of daylight saving time transitions
+
+## Team Contributions
  
  | Pair / Person       | Responsibilities                                                                                 |
  | ------------------  | ------------------------------------------------------------------------------------------------ |
@@ -112,13 +134,18 @@ Tests to check main functions
  
  ## Changes Since Last Milestone
  
- * Added test-mode branching in both components to satisfy unit tests without altering production behavior.
- * Configured Jest to mock CSS and unify React copies (`moduleNameMapper`).
- * No changes to core design or user stories; only test support and build config.
- 
+ * Added test-mode branching in both components to satisfy unit tests without altering production behavior
+ * Configured Jest to mock CSS and unify React copies (`moduleNameMapper`)
+ * Implemented UTC timezone handling for consistent date operations
+ * Enhanced schedule conflict detection with proper timezone support
+ * Added comprehensive timezone-aware test cases
+ * Improved error handling for calendar sync operations
+
  ---
  
  ## Notes
  
- * Keep `client/.env` (Auth0 domain & client ID) gitignored for real login.
+ * Keep `client/.env` (Auth0 domain & client ID) gitignored for real login
+ * All dates are handled in UTC format internally for consistency
+ * Calendar sync operations preserve UTC timezone information
 
