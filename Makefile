@@ -1,4 +1,4 @@
-.PHONY: test test-client test-server build build-client build-server install install-client install-server
+.PHONY: test test-client test-server build build-client build-server install install-client install-server start start-client start-server
 
 # Build everything
 build: build-client build-server
@@ -33,10 +33,13 @@ test-client:
 test-server:
 	cd server && npm test
 
-# Run client tests in watch mode
-test-client-watch:
-	cd client && npm test -- --watch
+# Start everything
+start: start-server start-client
 
-# Run server tests in watch mode
-test-server-watch:
-	cd server && npm run test:watch
+# Start client
+start-client:
+	cd client && npm start
+
+# Start server
+start-server:
+	cd server && npm start
