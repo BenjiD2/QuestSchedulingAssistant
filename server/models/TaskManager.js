@@ -128,22 +128,17 @@ class TaskManager {
       return false;
     }
 
-    // Ensure we're working with Date objects
-    const s1 = start1 instanceof Date ? start1 : new Date(start1);
-    const e1 = end1 instanceof Date ? end1 : new Date(end1);
-    const s2 = start2 instanceof Date ? start2 : new Date(start2);
-    const e2 = end2 instanceof Date ? end2 : new Date(end2);
-
     // Convert to timestamps for comparison
-    const ts1 = s1.getTime();
-    const te1 = e1.getTime();
-    const ts2 = s2.getTime();
-    const te2 = e2.getTime();
+    const ts1 = start1.getTime();
+    const te1 = end1.getTime();
+    const ts2 = start2.getTime();
+    const te2 = end2.getTime();
 
-    // Two ranges overlap if one range starts before the other ends
-    // AND the other range starts before the first ends
-    // BUT they don't overlap if one ends exactly when the other starts
-    return (ts1 < te2 && ts2 < te1);
+    // Two ranges overlap if:
+    // 1. Start of range1 is before end of range2 AND
+    // 2. End of range1 is after start of range2
+    // Note: Tasks can start exactly when another task ends (no overlap)
+    return (ts1 < te2 && te1 > ts2);
   }
 
   /**
@@ -163,7 +158,10 @@ class TaskManager {
       // Create a new task instance with the updates
       const updatedTaskData = {
         ...task,
-        ...updates
+        ...updates,
+        // Ensure dates are properly handled
+        startTime: updates.startTime ? new Date(updates.startTime) : task.startTime,
+        endTime: updates.endTime ? new Date(updates.endTime) : task.endTime
       };
 
       // Create a new Task instance to validate the updates
@@ -171,8 +169,10 @@ class TaskManager {
 
       // Check for conflicts with other tasks
       const hasConflict = this.tasks.some(otherTask => {
+        // Skip the task being edited
         if (otherTask.taskId === taskId) return false;
 
+        // Check for overlap with the updated times
         return this.hasTimeOverlap(
           tempTask.startTime,
           tempTask.endTime,
@@ -208,7 +208,6 @@ class TaskManager {
         throw new Error('Failed to sync task with calendar');
       }
     } catch (error) {
-      // Re-throw the error as is
       throw error;
     }
   }

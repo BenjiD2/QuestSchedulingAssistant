@@ -153,8 +153,8 @@ describe('TaskManager Integration Tests', () => {
       // Verify task remains unchanged
       const tasks = await taskManager.getAllTasks();
       const unchangedTask = tasks.find(t => t.taskId === otherTask.taskId);
-      expect(new Date(unchangedTask.startTime).toISOString()).toBe('2024-03-20T22:00:00.000Z');
-      expect(new Date(unchangedTask.endTime).toISOString()).toBe('2024-03-20T23:00:00.000Z');
+      expect(unchangedTask.startTime.getTime()).toBe(new Date('2024-03-20T22:00:00Z').getTime());
+      expect(unchangedTask.endTime.getTime()).toBe(new Date('2024-03-20T23:00:00Z').getTime());
     });
   });
 

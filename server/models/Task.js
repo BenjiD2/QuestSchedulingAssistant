@@ -29,47 +29,19 @@ class Task {
   parseDate(date) {
     if (!date) return null;
     
-    let timestamp;
     if (date instanceof Date) {
       if (isNaN(date.getTime())) {
         throw new Error('Invalid date format');
       }
-      // If the date is already in UTC (has 'Z' suffix), use it as is
-      if (date.toISOString().endsWith('Z')) {
-        return new Date(date.getTime());
-      }
-      // Convert to UTC by removing any timezone offset
-      timestamp = Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate(),
-        date.getUTCHours(),
-        date.getUTCMinutes(),
-        date.getUTCSeconds(),
-        date.getUTCMilliseconds()
-      );
+      return new Date(date.getTime()); // Create a new Date object to avoid reference issues
     } else {
       // For string dates, first create a temporary date
       const tempDate = new Date(date);
       if (isNaN(tempDate.getTime())) {
         throw new Error('Invalid date format');
       }
-      // If the string date is already in UTC (has 'Z' suffix), use it as is
-      if (date.toString().endsWith('Z')) {
-        return new Date(tempDate.getTime());
-      }
-      // Then convert to UTC
-      timestamp = Date.UTC(
-        tempDate.getUTCFullYear(),
-        tempDate.getUTCMonth(),
-        tempDate.getUTCDate(),
-        tempDate.getUTCHours(),
-        tempDate.getUTCMinutes(),
-        tempDate.getUTCSeconds(),
-        tempDate.getUTCMilliseconds()
-      );
+      return new Date(tempDate.getTime()); // Create a new Date object to avoid reference issues
     }
-    return new Date(timestamp);
   }
 
   validate() {
@@ -89,7 +61,7 @@ class Task {
     }
 
     // Validate time range
-    if (this.endTime <= this.startTime) {
+    if (this.endTime.getTime() <= this.startTime.getTime()) {
       throw new Error('End time must be after start time');
     }
   }
@@ -108,7 +80,7 @@ class Task {
 
     // Validate time range if both times are provided
     if (tempUpdates.startTime && tempUpdates.endTime) {
-      if (tempUpdates.endTime <= tempUpdates.startTime) {
+      if (tempUpdates.endTime.getTime() <= tempUpdates.startTime.getTime()) {
         throw new Error('End time must be after start time');
       }
     }

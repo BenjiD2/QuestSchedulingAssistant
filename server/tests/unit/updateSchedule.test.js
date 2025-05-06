@@ -62,12 +62,14 @@ describe('Update Schedule End-to-End Tests', () => {
       // Create initial tasks with sequential times
       const task1 = await taskManager.addTask({
         title: 'Task 1',
+        description: 'First task',
         startTime: new Date('2024-03-15T10:00:00Z'),
         endTime: new Date('2024-03-15T11:00:00Z')
       });
 
       const task2 = await taskManager.addTask({
         title: 'Task 2',
+        description: 'Second task',
         startTime: new Date('2024-03-15T11:00:00Z'),
         endTime: new Date('2024-03-15T12:00:00Z')
       });
@@ -76,11 +78,13 @@ describe('Update Schedule End-to-End Tests', () => {
       const updates = [
         {
           taskId: task1.taskId,
+          title: 'Updated Task 1',
           startTime: new Date('2024-03-15T10:00:00Z'),
           endTime: new Date('2024-03-15T11:00:00Z')
         },
         {
           taskId: task2.taskId,
+          title: 'Updated Task 2',
           startTime: new Date('2024-03-15T11:00:00Z'),
           endTime: new Date('2024-03-15T12:00:00Z')
         }
@@ -89,22 +93,19 @@ describe('Update Schedule End-to-End Tests', () => {
       // Update tasks in sequence
       const updatedTasks = [];
       for (const update of updates) {
-        const updatedTask = await taskManager.editTask(update.taskId, {
-          startTime: update.startTime,
-          endTime: update.endTime
-        });
+        const updatedTask = await taskManager.editTask(update.taskId, update);
         updatedTasks.push(updatedTask);
       }
 
       // Get updated tasks
-      const updatedTask1 = updatedTasks.find(t => t.taskId === task1.taskId);
-      const updatedTask2 = updatedTasks.find(t => t.taskId === task2.taskId);
+      const updatedTask1 = updatedTasks[0];
+      const updatedTask2 = updatedTasks[1];
 
       // Verify updates were applied correctly
-      expect(updatedTask1.startTime.toISOString()).toEqual(updates[0].startTime.toISOString());
-      expect(updatedTask1.endTime.toISOString()).toEqual(updates[0].endTime.toISOString());
-      expect(updatedTask2.startTime.toISOString()).toEqual(updates[1].startTime.toISOString());
-      expect(updatedTask2.endTime.toISOString()).toEqual(updates[1].endTime.toISOString());
+      expect(updatedTask1.startTime.toISOString()).toBe(updates[0].startTime.toISOString());
+      expect(updatedTask1.endTime.toISOString()).toBe(updates[0].endTime.toISOString());
+      expect(updatedTask2.startTime.toISOString()).toBe(updates[1].startTime.toISOString());
+      expect(updatedTask2.endTime.toISOString()).toBe(updates[1].endTime.toISOString());
     });
 
     test('should handle schedule conflicts', async () => {
