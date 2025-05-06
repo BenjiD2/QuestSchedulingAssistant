@@ -63,15 +63,15 @@ describe('Update Schedule End-to-End Tests', () => {
       const task1 = await taskManager.addTask({
         title: 'Task 1',
         description: 'First task',
-        startTime: new Date('2024-03-15T10:00:00Z'),
-        endTime: new Date('2024-03-15T11:00:00Z')
+        startTime: new Date('2024-03-15T10:00:00.000Z'),
+        endTime: new Date('2024-03-15T11:00:00.000Z')
       });
 
       const task2 = await taskManager.addTask({
         title: 'Task 2',
         description: 'Second task',
-        startTime: new Date('2024-03-15T11:00:00Z'),
-        endTime: new Date('2024-03-15T12:00:00Z')
+        startTime: new Date('2024-03-15T11:00:00.000Z'),
+        endTime: new Date('2024-03-15T12:00:00.000Z')
       });
 
       // Define updates for both tasks
@@ -79,14 +79,14 @@ describe('Update Schedule End-to-End Tests', () => {
         {
           taskId: task1.taskId,
           title: 'Updated Task 1',
-          startTime: new Date('2024-03-15T10:00:00Z'),
-          endTime: new Date('2024-03-15T11:00:00Z')
+          startTime: new Date('2024-03-15T10:00:00.000Z'),
+          endTime: new Date('2024-03-15T11:00:00.000Z')
         },
         {
           taskId: task2.taskId,
           title: 'Updated Task 2',
-          startTime: new Date('2024-03-15T11:00:00Z'),
-          endTime: new Date('2024-03-15T12:00:00Z')
+          startTime: new Date('2024-03-15T11:00:00.000Z'),
+          endTime: new Date('2024-03-15T12:00:00.000Z')
         }
       ];
 
@@ -102,10 +102,10 @@ describe('Update Schedule End-to-End Tests', () => {
       const updatedTask2 = updatedTasks[1];
 
       // Verify updates were applied correctly
-      expect(updatedTask1.startTime.toISOString()).toBe(updates[0].startTime.toISOString());
-      expect(updatedTask1.endTime.toISOString()).toBe(updates[0].endTime.toISOString());
-      expect(updatedTask2.startTime.toISOString()).toBe(updates[1].startTime.toISOString());
-      expect(updatedTask2.endTime.toISOString()).toBe(updates[1].endTime.toISOString());
+      expect(updatedTask1.startTime.toISOString()).toBe('2024-03-15T10:00:00.000Z');
+      expect(updatedTask1.endTime.toISOString()).toBe('2024-03-15T11:00:00.000Z');
+      expect(updatedTask2.startTime.toISOString()).toBe('2024-03-15T11:00:00.000Z');
+      expect(updatedTask2.endTime.toISOString()).toBe('2024-03-15T12:00:00.000Z');
     });
 
     test('should handle schedule conflicts', async () => {

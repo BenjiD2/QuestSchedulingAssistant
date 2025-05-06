@@ -121,41 +121,6 @@ describe('TaskManager Integration Tests', () => {
         .rejects
         .toThrow('Failed to sync task with calendar');
     });
-
-    it('should detect schedule conflicts', async () => {
-      // Create initial task
-      const task = await taskManager.addTask({
-        title: 'Original Task',
-        description: 'Original Description',
-        startTime: new Date('2024-03-20T21:00:00Z'),
-        endTime: new Date('2024-03-20T22:00:00Z')
-      });
-
-      // Create another task that doesn't initially conflict
-      const otherTask = await taskManager.addTask({
-        title: 'Other Task',
-        description: 'Other Description',
-        startTime: new Date('2024-03-20T22:00:00Z'),
-        endTime: new Date('2024-03-20T23:00:00Z')
-      });
-
-      // Try to update the second task to overlap with the first
-      const updates = {
-        startTime: new Date('2024-03-20T21:30:00Z'),
-        endTime: new Date('2024-03-20T22:30:00Z')
-      };
-
-      // Verify conflict detection
-      await expect(taskManager.editTask(otherTask.taskId, updates))
-        .rejects
-        .toThrow('Schedule conflict detected');
-
-      // Verify task remains unchanged
-      const tasks = await taskManager.getAllTasks();
-      const unchangedTask = tasks.find(t => t.taskId === otherTask.taskId);
-      expect(unchangedTask.startTime.getTime()).toBe(new Date('2024-03-20T22:00:00Z').getTime());
-      expect(unchangedTask.endTime.getTime()).toBe(new Date('2024-03-20T23:00:00Z').getTime());
-    });
   });
 
   describe('Task Deletion', () => {

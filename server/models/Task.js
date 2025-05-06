@@ -33,14 +33,16 @@ class Task {
       if (isNaN(date.getTime())) {
         throw new Error('Invalid date format');
       }
-      return new Date(date.getTime()); // Create a new Date object to avoid reference issues
+      // Preserve the exact UTC timestamp
+      return new Date(date.toISOString());
     } else {
       // For string dates, first create a temporary date
       const tempDate = new Date(date);
       if (isNaN(tempDate.getTime())) {
         throw new Error('Invalid date format');
       }
-      return new Date(tempDate.getTime()); // Create a new Date object to avoid reference issues
+      // Preserve the exact UTC timestamp
+      return new Date(tempDate.toISOString());
     }
   }
 

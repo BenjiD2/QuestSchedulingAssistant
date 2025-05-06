@@ -17,30 +17,34 @@ class TaskManager {
    */
   async addTask(taskData) {
     try {
-      // Create and validate task
+      // Create a new task instance
       const task = new Task(taskData);
 
-      // Check for schedule conflicts before adding
-      const hasConflict = this.tasks.some(existingTask => 
-        this.hasTimeOverlap(
+      // Check for conflicts with existing tasks
+      const hasConflict = this.tasks.some(existingTask => {
+        return this.hasTimeOverlap(
           task.startTime,
           task.endTime,
           existingTask.startTime,
           existingTask.endTime
-        )
-      );
+        );
+      });
 
       if (hasConflict) {
         throw new Error('Schedule conflict detected');
       }
 
-      // Sync with calendar
-      const calendarEvent = await this.calendarService.addEvent(task);
-      task.googleEventId = calendarEvent.id;
+      // Try to sync with calendar
+      let calendarEvent;
+      try {
+        calendarEvent = await this.calendarService.addEvent(task);
+        task.googleEventId = calendarEvent?.id || calendarEvent?.eventId;
+      } catch (error) {
+        throw error; // Preserve the original error
+      }
 
-      // Add to local storage
+      // Add task to the list
       this.tasks.push(task);
-
       return task;
     } catch (error) {
       throw new Error(`Failed to add task: ${error.message}`);
@@ -137,7 +141,6 @@ class TaskManager {
     // Two ranges overlap if:
     // 1. Start of range1 is before end of range2 AND
     // 2. End of range1 is after start of range2
-    // Note: Tasks can start exactly when another task ends (no overlap)
     return (ts1 < te2 && te1 > ts2);
   }
 
@@ -155,17 +158,18 @@ class TaskManager {
     }
 
     try {
-      // Create a new task instance with the updates
-      const updatedTaskData = {
+      // Create a temporary task with the updates to check for conflicts
+      const tempTask = {
         ...task,
         ...updates,
-        // Ensure dates are properly handled
-        startTime: updates.startTime ? new Date(updates.startTime) : task.startTime,
-        endTime: updates.endTime ? new Date(updates.endTime) : task.endTime
+        startTime: updates.startTime ? new Date(updates.startTime.toISOString()) : task.startTime,
+        endTime: updates.endTime ? new Date(updates.endTime.toISOString()) : task.endTime
       };
 
-      // Create a new Task instance to validate the updates
-      const tempTask = new Task(updatedTaskData);
+      // Validate time range
+      if (tempTask.endTime <= tempTask.startTime) {
+        throw new Error('End time must be after start time');
+      }
 
       // Check for conflicts with other tasks
       const hasConflict = this.tasks.some(otherTask => {
@@ -173,11 +177,13 @@ class TaskManager {
         if (otherTask.taskId === taskId) return false;
 
         // Check for overlap with the updated times
+        const otherStart = new Date(otherTask.startTime.toISOString());
+        const otherEnd = new Date(otherTask.endTime.toISOString());
         return this.hasTimeOverlap(
           tempTask.startTime,
           tempTask.endTime,
-          otherTask.startTime,
-          otherTask.endTime
+          otherStart,
+          otherEnd
         );
       });
 
