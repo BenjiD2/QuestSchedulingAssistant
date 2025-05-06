@@ -62,7 +62,7 @@ Tests to check main functions
 2. Task Creation
    - 
  
- Authentication and onboarding UI
+3. Authentication and onboarding UI
  
  | Scenario                          | Steps                                    | Expected outcome                                      |
  | --------------------------------- | ---------------------------------------- | ----------------------------------------------------- |
@@ -121,5 +121,4 @@ Tests to check main functions
  ## Notes
  
  * Keep `client/.env` (Auth0 domain & client ID) gitignored for real login.
- *
 
