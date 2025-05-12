@@ -48,7 +48,8 @@ server/tests/unit/
 ├── taskManager.test.js       # Integration tests for TaskManager service
 ├── calendarService.test.js   # Tests for Google Calendar integration
 ├── taskOperations.test.js    # Tests for task CRUD operations
-└── updateSchedule.test.js    # End-to-end tests for schedule updates
+├── updateSchedule.test.js    # End-to-end tests for schedule updates
+└── sonarTimeEstimate.test.js # Unit tests for Perplexity Sonar API time estimation
 
 client/src/__tests__/
 ├── GoogleCalendar.test.js    # Unit Tests for Google Calendar integration
@@ -120,6 +121,12 @@ Tests to check main functions
     * Support for back-to-back tasks without conflicts
     * Proper handling of daylight saving time transitions
 
+ * **AI Time Estimation**
+    * Integration with Perplexity's Sonar API for task time estimation
+    * Structured output formatting for consistent time estimates
+    * Error handling for API rate limits and connectivity issues
+    * JSON schema-based response parsing
+
 ## Team Contributions
  
  | Pair / Person       | Responsibilities                                                                                 |
@@ -140,6 +147,7 @@ Tests to check main functions
  * Enhanced schedule conflict detection with proper timezone support
  * Added comprehensive timezone-aware test cases
  * Improved error handling for calendar sync operations
+ * Added Perplexity Sonar API integration for AI-based task time estimation
 
  ---
  
