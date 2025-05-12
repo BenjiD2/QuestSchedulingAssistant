@@ -49,7 +49,7 @@ server/tests/unit/
 ├── calendarService.test.js   # Tests for Google Calendar integration
 ├── taskOperations.test.js    # Tests for task CRUD operations
 ├── updateSchedule.test.js    # End-to-end tests for schedule updates
-└── sonarTimeEstimate.test.js # Unit tests for Perplexity Sonar API time estimation
+└── sonarTimeEstimate.test.js # Unit tests for AI-powered time estimation
 
 client/src/__tests__/
 ├── GoogleCalendar.test.js    # Unit Tests for Google Calendar integration
@@ -83,6 +83,14 @@ Tests to check main functions
  | Authenticated onboarding greeting | Simulate `auth.isAuthenticated() → true` | Displays "Hello, {user.name}"                         |
  | HomePage greeting & tasks         | Render `HomePageUI user={…} tasks=[…]`   | Renders `<h1>Hello, …</h1>` and correct `<li>` count  |
 
+4. AI Time Estimation
+   - Input: Create a task with description
+   - Expected: System provides AI-generated time estimate
+   - Test cases:
+     * Valid task description: Should return structured time estimate
+     * Short description: Should reject with validation error
+     * API errors: Should handle gracefully with fallback estimates
+     * Task update: Should update task with new time estimate
 
 ## Implementation Details
  
@@ -114,18 +122,25 @@ Tests to check main functions
     * Calendar sync with UTC timezone preservation
     * Comprehensive error handling for date operations
 
+ * **AI-Powered Time Estimation**
+    * Integration with Perplexity's Sonar API for intelligent task duration estimation
+    * Input validation for task descriptions (minimum length, non-empty)
+    * Structured JSON response handling with hours and minutes
+    * Comprehensive error handling:
+      - API rate limiting
+      - Network failures
+      - Authentication errors
+      - Timeout handling
+      - Malformed responses
+    * Task integration with automatic duration updates
+    * Support for decimal hours and zero-duration tasks
+
  * **Date and Time Handling**
     * All dates stored and compared in UTC format
     * Automatic timezone conversion for user display
     * Validation for time ranges and schedule conflicts
     * Support for back-to-back tasks without conflicts
     * Proper handling of daylight saving time transitions
-
- * **AI Time Estimation**
-    * Integration with Perplexity's Sonar API for task time estimation
-    * Structured output formatting for consistent time estimates
-    * Error handling for API rate limits and connectivity issues
-    * JSON schema-based response parsing
 
 ## Team Contributions
  
@@ -136,7 +151,7 @@ Tests to check main functions
  | **Raouf & Reece**   | Implemented Task Functionality                                                                   |
  | **Brayley & Emily** | Implemented Update Calendar/Task Scheduling                                                      |
 
- 
+
  ---
  
  ## Changes Since Last Milestone
