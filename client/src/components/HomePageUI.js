@@ -13,6 +13,12 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
 
+  // Gamification state
+  const [questProgress, setQuestProgress] = useState(65);
+  const [currentLevel, setCurrentLevel] = useState(3);
+  const questGoal = 100;
+  const streakDays = 7;
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
@@ -52,14 +58,24 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   };
 
   const handleCompleteTask = (taskId) => {
-    setTasks(tasks.map(task => {
+    const updatedTasks = tasks.map(task => {
       if (task.taskId === taskId) {
         const xpGained = calculateTaskXP(task);
-        user.addXP(xpGained);
+        const newXP = questProgress + xpGained;
+
+        if (newXP >= questGoal) {
+          setCurrentLevel(prev => prev + 1);
+          setQuestProgress(newXP - questGoal);
+        } else {
+          setQuestProgress(newXP);
+        }
+
         return { ...task, completed: true };
       }
       return task;
-    }));
+    });
+
+    setTasks(updatedTasks);
   };
 
   const calculateTaskXP = (task) => {
@@ -143,10 +159,10 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     { day: 'Sun', date: 27, events: [] }
   ];
 
-  const streakDays = 7;
-  const currentLevel = 3;
-  const questProgress = 65;
-  const questGoal = 100;
+  // const streakDays = 7;
+  // const currentLevel = 3;
+  // const questProgress = 65;
+  // const questGoal = 100;
   const achievements = [
     { icon: '🔥', name: 'On Fire', description: '7-day streak' },
     { icon: '⭐', name: 'Super Achiever', description: 'Completed 5 tasks today' },
