@@ -85,40 +85,41 @@ client/src/__tests__/
 └── onboardingAuthenticationUI.test.js  # Unit tests for user onboarding and authentication
 ```
 
-## Acceptance Tests
+Milestone 4A
 
-Tests to check main functions
+In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users’ schedules accordingly. 
 
-1. User Authentication
-   - Input: Click "Sign In with Google"
-   - Expected: User is redirected to Google OAuth, then back to the app with their profile loaded
+In this second iteration, we’re focusing on improving usability by integrating the backend with the frontend and connecting to a database to store users’ account information. We will gamify task completion, implementing points and streaks to track users’ progress. In addition to account info, the database will store these points and streak information as well. Additionally, we will connect to a Large Language Model (Perplexity) API to compute estimates about task duration and improve the intelligence of our scheduling app.
 
-2. Task Creation
-   - Input: Create a new task with title, start time, and end time
-   - Expected: Task is created and synced with Google Calendar
-   - Test cases:
-     * Valid time range: Should succeed
-     * Overlapping times: Should fail with conflict error
-     * Invalid time range (end before start): Should fail with validation error
+Iteration 2: Planned Implementations
+- Points System & Gamification
+  • Implement points tracking for task completion
+  • Create visual indicators for earned points
 
-3. Authentication and onboarding UI
- 
- | Scenario                          | Steps                                    | Expected outcome                                      |
- | --------------------------------- | ---------------------------------------- | ----------------------------------------------------- |
- | Unauthenticated onboarding screen | Navigate to `/` when not logged in       | "Welcome to QuestChampion" + Register & Login buttons |
- | Register button                   | Click **Register**                       | `auth.register()` is invoked                          |
- | Login button                      | Click **Login**                          | `auth.login()` is invoked                             |
- | Authenticated onboarding greeting | Simulate `auth.isAuthenticated() → true` | Displays "Hello, {user.name}"                         |
- | HomePage greeting & tasks         | Render `HomePageUI user={…} tasks=[…]`   | Renders `<h1>Hello, …</h1>` and correct `<li>` count  |
+- Database Integration
+  • Set up user data storage to store user authentication and persist data
+  • Maintain point history
 
-4. AI Time Estimation
-   - Input: Create a task with description
-   - Expected: System provides AI-generated time estimate
-   - Test cases:
-     * Valid task description: Should return structured time estimate
-     * Short description: Should reject with validation error
-     * API errors: Should handle gracefully with fallback estimates
-     * Task update: Should update task with new time estimate
+- Quest Streaks
+  • Develop streak tracking system
+  • Implement streak-based rewards
+
+- AI-Powered Task Estimation
+  • Integrate AI model for task duration prediction
+  • Implement smart scheduling suggestions
+
+- Frontend Integration
+  • View upcoming events pulled from their Google Calendar.
+  • Create and delete events directly from the interface.
+
+| Use Case                                  | Students                                     |
+|-------------------------------------------|----------------------------------------------|
+| Add & Manage points                       | Raouf Abujaber & Reece VanDeWeghe            |
+| Store user data in database               | Alberto Chiapparoli                          |
+| Display quest streaks                     | Brayley Starr                                |
+| AI-generate time estimates for tasks      | Isis Decrem & Emily Bae                      |
+| Integrate with frontend                   | Benji Duan & Kanchan Naik                    |
+
 
 ## Implementation Details
  
@@ -178,30 +179,6 @@ Tests to check main functions
    * updateUserXP and updateUserStreak call update('users', { id }, { xp/streak }).
    * addAchievement and addCompletedTask append to arrays and call update accordingly.
 
-
-## Team Contributions
- 
- | Pair / Person       | Responsibilities                                                                                 |
- | ------------------  | ------------------------------------------------------------------------------------------------ |
- | **Alberto & Isis**  | Implemented React Auth branching in OnboardingUI and HomePageUI; wrote corresponding unit tests. |
- | **Kanchan & Benji** | Implemented Google Authentication and Import Calendar                                            |
- | **Raouf & Reece**   | Implemented Task Functionality                                                                   |
- | **Brayley & Emily** | Implemented Update Calendar/Task Scheduling                                                      |
-
-
- ---
- 
- ## Changes Since Last Milestone
- 
- * Added test-mode branching in both components to satisfy unit tests without altering production behavior
- * Configured Jest to mock CSS and unify React copies (`moduleNameMapper`)
- * Implemented UTC timezone handling for consistent date operations
- * Enhanced schedule conflict detection with proper timezone support
- * Added comprehensive timezone-aware test cases
- * Improved error handling for calendar sync operations
- * Added Perplexity Sonar API integration for AI-based task time estimation
-
- ---
  
  ## Notes
  

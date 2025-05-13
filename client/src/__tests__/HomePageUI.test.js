@@ -78,6 +78,7 @@ describe('HomePageUI Google Calendar Integration', () => {
         });
     });
 
+    // Schedule component renders in properly
     it('should render Google Calendar sync button in tasks card', () => {
         render(<HomePageUI user={mockUser} />);
 
@@ -90,6 +91,7 @@ describe('HomePageUI Google Calendar Integration', () => {
         expect(syncButton).toHaveTextContent('Sync with Google Calendar');
     });
 
+    // Tests whether we can sign in and recieve authentication
     it('should handle Google Calendar sign in', async () => {
         const { gapi } = require('gapi-script');
         render(<HomePageUI user={mockUser} />);
@@ -107,6 +109,7 @@ describe('HomePageUI Google Calendar Integration', () => {
         expect(gapi.load).toHaveBeenCalledWith('client:auth2', expect.any(Function));
     });
 
+    // Adding task function syncs with user's google calendar
     it('should add task to Google Calendar', async () => {
         const { gapi } = require('gapi-script');
         console.log('Starting add task test');
