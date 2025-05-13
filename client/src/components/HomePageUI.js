@@ -8,8 +8,7 @@ import { gapi } from "gapi-script";
 import convertEventToTask from '../utils/convertEventToTask';
 
 const CLIENT_ID = "174375671713-4nkbn9ga7v5piqjrokpj454jfinrja9f.apps.googleusercontent.com"; 
-const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
-
+const SCOPES = "https://www.googleapis.com/auth/calendar";
 
 export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [activeTab, setActiveTab] = useState('tasks');
@@ -19,6 +18,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [tasks, setTasks] = useState([]);
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   function getStartOfWeekISO() {
     const now = new Date();
@@ -30,39 +30,6 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   
     return startOfWeek.toISOString();
   }
-  
-
-  const handleGoogleCalendarSignIn = () => {
-    gapi.load("client:auth2", () => {
-      gapi.client
-        .init({
-          clientId: CLIENT_ID,
-          discoveryDocs: [
-            "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
-          ],
-          scope: SCOPES,
-        })
-        .then(() => gapi.auth2.getAuthInstance().signIn())
-        .then(() =>
-          gapi.client.calendar.events.list({
-            calendarId: "primary",
-            timeMin: getStartOfWeekISO(),
-            showDeleted: false,
-            singleEvents: true,
-            maxResults: 10,
-            orderBy: "startTime",
-          })
-        )
-        .then((response) => {
-          const events = response.result.items;
-          const calendarTasks = events.map(convertEventToTask);
-          setTasks((prev) => [...prev, ...calendarTasks]);
-        })
-        .catch((err) => {
-          console.error("Error during Google Calendar integration:", err);
-        });
-    });
-  };  
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -80,14 +47,81 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     }
   }, [propTasks]);
 
-  const handleAddTask = (taskData) => {
+  const handleGoogleCalendarSignIn = () => {
+    gapi.load("client:auth2", () => {
+      gapi.client
+        .init({
+          clientId: CLIENT_ID,
+          discoveryDocs: [
+            "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+          ],
+          scope: SCOPES,
+        })
+        .then(() => gapi.auth2.getAuthInstance().signIn())
+        .then(() => {
+          setIsSignedIn(true); // ✅ Now you're tracking the state
+  
+          return gapi.client.calendar.events.list({
+            calendarId: "primary",
+            timeMin: getStartOfWeekISO(),
+            showDeleted: false,
+            singleEvents: true,
+            maxResults: 10,
+            orderBy: "startTime",
+          });
+        })
+        .then((response) => {
+          const events = response.result.items;
+          const calendarTasks = events.map(convertEventToTask);
+          setTasks((prev) => [...prev, ...calendarTasks]);
+        })
+        .catch((err) => {
+          console.error("Error during Google Calendar integration:", err);
+        });
+    });
+  };   
+
+  const addTaskToGoogleCalendar = async (task) => {
+    const event = {
+      summary: task.title,
+      description: task.description,
+      location: task.location,
+      start: {
+        dateTime: new Date(task.startTime).toISOString(),
+        timeZone: "UTC",
+      },
+      end: {
+        dateTime: new Date(task.endTime).toISOString(),
+        timeZone: "UTC",
+      },
+    };
+  
+    return gapi.client.calendar.events.insert({
+      calendarId: "primary",
+      resource: event,
+    });
+  };
+
+  const handleAddTask = async (taskData) => {
     const newTask = {
       taskId: crypto.randomUUID(),
       ...taskData,
       completed: false
     };
+
+    try {
+      if (isSignedIn) {
+        console.log("trying to add a task");
+        const res = await addTaskToGoogleCalendar(newTask);
+        newTask.googleEventId = res.result.id;
+      }
+    } catch (error) {
+      console.error("Failed to add event to Google Calendar:", error);
+    }
+
     setTasks([...tasks, newTask]);
     setShowTaskForm(false);
+
   };
 
   const handleEditTask = (taskData) => {
