@@ -20,6 +20,18 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
 
+  function getStartOfWeekISO() {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - day); // go back to Sunday
+    startOfWeek.setHours(0, 0, 0, 0); // set to 12:00 AM
+  
+    return startOfWeek.toISOString();
+  }
+  
+
   const handleGoogleCalendarSignIn = () => {
     gapi.load("client:auth2", () => {
       gapi.client
@@ -34,7 +46,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         .then(() =>
           gapi.client.calendar.events.list({
             calendarId: "primary",
-            timeMin: new Date().toISOString(),
+            timeMin: getStartOfWeekISO(),
             showDeleted: false,
             singleEvents: true,
             maxResults: 10,
