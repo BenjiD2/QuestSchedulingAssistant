@@ -333,6 +333,13 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
 
           {/* Tasks */}
           <div className="dashboard-card tasks-card">
+          <button 
+            className="sync-calendar-button" 
+            onClick={handleGoogleCalendarSignIn}
+          >
+            Sync with Google Calendar
+          </button>
+
             <div className="card-header">
               <h2>Tasks</h2>
               <span className="check-icon"></span>
@@ -393,10 +400,6 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             </div>
           </div>
         </div>
-
-        <button onClick={handleGoogleCalendarSignIn}>
-          Sync with Google Calendar
-        </button>
 
         <div className="dashboard-row">
             {/* Gamification */}

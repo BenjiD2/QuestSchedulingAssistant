@@ -1,7 +1,6 @@
 import React from 'react';
 import './App.css';
 import { HomePageUI } from './components/HomePageUI';
-import GoogleCalendar from "./GoogleCalendar";
 import { OnboardingUI } from './components/OnboardingUI';
 import { useAuth0 } from '@auth0/auth0-react';
 
@@ -57,7 +56,6 @@ function App() {
     <div className="app">
       <main className="app-main">
         <HomePageUI user={user} />
-        <GoogleCalendar />
       </main>
     </div>
   );
