@@ -170,6 +170,15 @@ Tests to check main functions
     * Support for back-to-back tasks without conflicts
     * Proper handling of daylight saving time transitions
 
+* **User Data Storage & Testing**
+   * Service functions: createUser, getUserById, updateUserXP, updateUserStreak, addAchievement, addCompletedTask.
+   * Unit tests mock dbClient to verify:
+   * createUser calls insert('users', userData) and returns created record.
+   * getUserById calls select('users', { id }) and returns first match or null.
+   * updateUserXP and updateUserStreak call update('users', { id }, { xp/streak }).
+   * addAchievement and addCompletedTask append to arrays and call update accordingly.
+
+
 ## Team Contributions
  
  | Pair / Person       | Responsibilities                                                                                 |
