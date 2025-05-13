@@ -23,11 +23,39 @@ This will:
 make start
 ```
 This will:
-- Start the server
+- Start the server on port 8080
 - Start the client on port 3000
 
 2. Access the application:
 - Open your browser and navigate to `http://localhost:3000`
+
+Note: If you need to debug or see logs from either the client or server separately, you can start them individually:
+```bash
+# Start server only
+cd server && npm start
+
+# Start client only (in a separate terminal)
+cd client && npm start
+```
+
+### Environment Setup
+Before running the application, make sure you have the following environment files set up:
+
+1. Server (server/.env):
+```
+GOOGLE_CLIENT_ID=your_client_id_here
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
+PORT=8080
+```
+
+2. Client (client/.env):
+```
+REACT_APP_AUTH0_DOMAIN=your_auth0_domain
+REACT_APP_AUTH0_CLIENT_ID=your_auth0_client_id
+REACT_APP_AUTH0_CALLBACK_URL=http://localhost:3000/callback
+REACT_APP_API_URL=http://localhost:8080
+```
 
 ### Running Tests
 ```bash

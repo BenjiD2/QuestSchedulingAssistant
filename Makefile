@@ -27,14 +27,15 @@ test: test-client test-server
 
 # Run client tests
 test-client:
-	cd client && npm test
+	cd client && CI=true npm test
 
 # Run server tests
 test-server:
 	cd server && npm test
 
 # Start everything
-start: start-server start-client
+start:
+	cd server && npm start & cd client && npm start
 
 # Start client
 start-client:

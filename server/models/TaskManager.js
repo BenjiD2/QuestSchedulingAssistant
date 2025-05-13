@@ -5,10 +5,10 @@ const Task = require('./Task');
 const GoogleCalendarService = require('./GoogleCalendarService');
 
 class TaskManager {
-  constructor() {
-    this.tasks = [];
+    constructor() {
+      this.tasks = []; 
     this.calendarService = new GoogleCalendarService();
-  }
+    }
   
   /**
    * Adds a new task
@@ -44,7 +44,7 @@ class TaskManager {
       }
 
       // Add task to the list
-      this.tasks.push(task);
+        this.tasks.push(task);
       return task;
     } catch (error) {
       throw new Error(`Failed to add task: ${error.message}`);
@@ -152,11 +152,11 @@ class TaskManager {
    */
   async editTask(taskId, updates) {
     // Find the task first
-    const task = this.tasks.find(t => t.taskId === taskId);
-    if (!task) {
+        const task = this.tasks.find(t => t.taskId === taskId);
+        if (!task) {
       throw new Error('Task not found');
-    }
-
+        }
+      
     try {
       // Create a temporary task with the updates to check for conflicts
       const tempTask = {
@@ -246,7 +246,7 @@ class TaskManager {
         this.tasks = this.tasks.filter(t => t.originalTaskId !== taskId);
       } catch (error) {
         throw new Error(`Failed to delete task: ${error.message}`);
-      }
+        }
     } catch (error) {
       throw error;
     }
