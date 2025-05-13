@@ -85,7 +85,7 @@ client/src/__tests__/
 └── onboardingAuthenticationUI.test.js  # Unit tests for user onboarding and authentication
 ```
 
-Milestone 4A
+## Milestone 4A
 
 In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users’ schedules accordingly. 
 
