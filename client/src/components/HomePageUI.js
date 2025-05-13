@@ -4,6 +4,13 @@ import { useAuth0 } from "@auth0/auth0-react";
 import TaskForm from './TaskForm';
 import Profile from './Profile';
 
+import { gapi } from "gapi-script";
+import convertEventToTask from '../utils/convertEventToTask';
+
+const CLIENT_ID = "174375671713-4nkbn9ga7v5piqjrokpj454jfinrja9f.apps.googleusercontent.com"; 
+const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+
+
 export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [activeTab, setActiveTab] = useState('tasks');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -12,6 +19,38 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [tasks, setTasks] = useState([]);
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
+
+  const handleGoogleCalendarSignIn = () => {
+    gapi.load("client:auth2", () => {
+      gapi.client
+        .init({
+          clientId: CLIENT_ID,
+          discoveryDocs: [
+            "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+          ],
+          scope: SCOPES,
+        })
+        .then(() => gapi.auth2.getAuthInstance().signIn())
+        .then(() =>
+          gapi.client.calendar.events.list({
+            calendarId: "primary",
+            timeMin: new Date().toISOString(),
+            showDeleted: false,
+            singleEvents: true,
+            maxResults: 10,
+            orderBy: "startTime",
+          })
+        )
+        .then((response) => {
+          const events = response.result.items;
+          const calendarTasks = events.map(convertEventToTask);
+          setTasks((prev) => [...prev, ...calendarTasks]);
+        })
+        .catch((err) => {
+          console.error("Error during Google Calendar integration:", err);
+        });
+    });
+  };  
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -55,7 +94,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     setTasks(tasks.map(task => {
       if (task.taskId === taskId) {
         const xpGained = calculateTaskXP(task);
-        user.addXP(xpGained);
+        // user.addXP(xpGained);   // we don't support this integration yet
         return { ...task, completed: true };
       }
       return task;
@@ -111,11 +150,29 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   });
   const dayOfWeek = todayDate.toLocaleDateString('en-US', { weekday: 'long' });
 
-  const events = [
-    { id: 1, title: 'Team Meeting', time: '09:00 - 10:30', location: 'Conference Room A', color: 'blue' },
-    { id: 2, title: 'Project Review', time: '14:00 - 15:00', location: 'Zoom Call', color: 'green' },
-    { id: 3, title: 'Client Call', time: '16:30 - 17:00', location: 'Phone', color: 'purple' }
-  ];
+  const isToday = (input) => {
+    const eventDate = new Date(input);
+    const today = new Date();
+  
+    return (
+      eventDate.getFullYear() === today.getFullYear() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getDate() === today.getDate()
+    );
+  };
+  
+  const todayEvents = tasks.filter(
+    task => task.startTime && isToday(task.startTime)
+  ).map(task => ({
+    id: task.taskId,
+    title: task.title,
+    time: task.startTime && task.endTime
+      ? `${new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(task.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+      : 'All Day',
+    location: task.location || 'No location',
+    color: 'blue', 
+  }));
+  
 
   const completedTasks = tasks.filter(task => task.completed);
 
@@ -247,18 +304,18 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
               <p>{dayOfWeek}</p>
             </div>
             <div className="events-list">
-              {events.map(event => (
-                <div className={`event-item ${event.color}`} key={event.id}>
-                  <div className="event-time-icon">
-                    <div className="time-icon-circle"></div>
-                  </div>
-                  <div className="event-details">
-                    <h4>{event.title}</h4>
-                    <p className="event-time">{event.time}</p>
-                    <p className="event-location">{event.location}</p>
-                  </div>
+            {todayEvents.map(event => (
+              <div className={`event-item ${event.color}`} key={event.id}>
+                <div className="event-time-icon">
+                  <div className="time-icon-circle"></div>
                 </div>
-              ))}
+                <div className="event-details">
+                  <h4>{event.title}</h4>
+                  <p className="event-time">{event.time}</p>
+                  <p className="event-location">{event.location}</p>
+                </div>
+              </div>
+            ))}
             </div>
           </div>
 
@@ -324,6 +381,10 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             </div>
           </div>
         </div>
+
+        <button onClick={handleGoogleCalendarSignIn}>
+          Sync with Google Calendar
+        </button>
 
         <div className="dashboard-row">
             {/* Gamification */}
