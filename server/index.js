@@ -20,6 +20,10 @@ app.get('/', (req, res) => {
   res.send('Quest Scheduling Assistant API');
 });
 
+// Add time estimation route
+const timeEstimationRoutes = require('./routes/timeEstimation');
+app.use('/api', timeEstimationRoutes);
+
 // Google Calendar authentication endpoint
 app.post('/auth/google', async (req, res) => {
   try {

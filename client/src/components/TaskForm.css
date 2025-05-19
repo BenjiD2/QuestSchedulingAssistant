@@ -104,7 +104,8 @@ textarea {
 }
 
 .cancel-button,
-.submit-button {
+.submit-button,
+.ai-estimate-button {
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
@@ -123,6 +124,27 @@ textarea {
   background-color: #eee;
 }
 
+.ai-estimate-button {
+  background-color: #ff69b4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-estimate-button:hover {
+  background-color: #ff1493;
+}
+
+.ai-estimate-button:disabled {
+  background-color: #ffb6c1;
+  cursor: not-allowed;
+}
+
 .submit-button {
   background-color: #4a90e2;
   border: none;
@@ -131,6 +153,59 @@ textarea {
 
 .submit-button:hover {
   background-color: #357abd;
+}
+
+.estimate-error {
+  margin: 10px 0;
+  color: #dc3545;
+  font-size: 14px;
+}
+
+.estimate-result {
+  margin: 15px 0;
+  padding: 10px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.estimate-result p {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.estimate-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.accept-estimate,
+.reject-estimate {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.accept-estimate {
+  background-color: #28a745;
+  color: white;
+}
+
+.accept-estimate:hover {
+  background-color: #218838;
+}
+
+.reject-estimate {
+  background-color: #dc3545;
+  color: white;
+}
+
+.reject-estimate:hover {
+  background-color: #c82333;
 }
 
 /* Responsive adjustments */
@@ -144,4 +219,150 @@ textarea {
     width: 95%;
     padding: 16px;
   }
+}
+
+.ai-estimate-section {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+}
+
+.estimate-error {
+  margin-top: 10px;
+  color: #dc3545;
+  font-size: 14px;
+}
+
+.estimate-result {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.estimate-result p {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.estimate-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.accept-estimate,
+.reject-estimate {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.accept-estimate {
+  background-color: #28a745;
+  color: white;
+}
+
+.accept-estimate:hover {
+  background-color: #218838;
+}
+
+.reject-estimate {
+  background-color: #dc3545;
+  color: white;
+}
+
+.reject-estimate:hover {
+  background-color: #c82333;
+}
+
+.estimate-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.estimate-popup-content {
+  background-color: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
+.estimate-popup-content h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 20px;
+}
+
+.estimate-details {
+  margin-bottom: 20px;
+}
+
+.estimate-time {
+  font-size: 24px;
+  font-weight: 600;
+  color: #4a90e2;
+  margin: 0 0 12px 0;
+}
+
+.estimate-reasoning {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.estimate-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.accept-estimate,
+.modify-estimate {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.accept-estimate {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+}
+
+.accept-estimate:hover {
+  background-color: #357abd;
+}
+
+.modify-estimate {
+  background-color: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.modify-estimate:hover {
+  background-color: #eee;
 } 

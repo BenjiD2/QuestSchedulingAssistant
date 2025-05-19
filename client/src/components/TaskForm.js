@@ -12,6 +12,11 @@ const TaskForm = ({ task, onSubmit, onClose }) => {
     location: ''
   });
 
+  const [aiEstimate, setAiEstimate] = useState(null);
+  const [isLoadingEstimate, setIsLoadingEstimate] = useState(false);
+  const [estimateError, setEstimateError] = useState(null);
+  const [showEstimatePopup, setShowEstimatePopup] = useState(false);
+
   useEffect(() => {
     if (task) {
       setFormData({
@@ -32,6 +37,71 @@ const TaskForm = ({ task, onSubmit, onClose }) => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const getAiEstimate = async () => {
+    if (!formData.title || !formData.description) {
+      setEstimateError('Please add a title and description for an estimation');
+      return;
+    }
+
+    setIsLoadingEstimate(true);
+    setEstimateError(null);
+
+    try {
+      const response = await fetch('http://localhost:8080/api/estimate-time', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get time estimate');
+      }
+
+      const data = await response.json();
+      // Convert hours and minutes to total minutes
+      const totalMinutes = (data.hours * 60) + data.minutes;
+      setAiEstimate({
+        minutes: totalMinutes,
+        reasoning: data.reasoning
+      });
+      setShowEstimatePopup(true);
+    } catch (error) {
+      setEstimateError('Failed to get time estimate. Please try again.');
+    } finally {
+      setIsLoadingEstimate(false);
+    }
+  };
+
+  const acceptEstimate = () => {
+    const newDuration = aiEstimate.minutes;
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        duration: newDuration
+      };
+      
+      // Update end time if start time is set
+      if (prev.startTime) {
+        const start = new Date(prev.startTime);
+        const end = new Date(start.getTime() + newDuration * 60000);
+        newFormData.endTime = end.toISOString().slice(0, 16);
+      }
+      
+      return newFormData;
+    });
+    setAiEstimate(null);
+    setShowEstimatePopup(false);
+  };
+
+  const modifyEstimate = () => {
+    setShowEstimatePopup(false);
   };
 
   const handleSubmit = (e) => {
@@ -154,7 +224,39 @@ const TaskForm = ({ task, onSubmit, onClose }) => {
             />
           </div>
 
+          {estimateError && (
+            <div className="estimate-error">{estimateError}</div>
+          )}
+
+          {showEstimatePopup && aiEstimate && (
+            <div className="estimate-popup">
+              <div className="estimate-popup-content">
+                <h3>AI Time Estimate</h3>
+                <div className="estimate-details">
+                  <p className="estimate-time">{aiEstimate.minutes} minutes</p>
+                  <p className="estimate-reasoning">{aiEstimate.reasoning}</p>
+                </div>
+                <div className="estimate-actions">
+                  <button type="button" onClick={modifyEstimate} className="modify-estimate">
+                    Modify
+                  </button>
+                  <button type="button" onClick={acceptEstimate} className="accept-estimate">
+                    Accept
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="form-actions">
+            <button 
+              type="button" 
+              className="ai-estimate-button"
+              onClick={getAiEstimate}
+              disabled={isLoadingEstimate}
+            >
+              {isLoadingEstimate ? 'Getting Estimate...' : 'Get AI Estimate'}
+            </button>
             <button type="button" className="cancel-button" onClick={onClose}>
               Cancel
             </button>

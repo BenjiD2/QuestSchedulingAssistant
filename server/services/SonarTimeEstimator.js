@@ -20,11 +20,11 @@ class SonarTimeEstimator {
         messages: [
           {
             role: 'system',
-            content: 'Be precise and concise.'
+            content: 'You are a task time estimation expert. Provide a brief, clear justification for your time estimate.'
           },
           {
             role: 'user',
-            content: `Estimate the time required for the following task: ${taskDescription}`
+            content: `Estimate the time required for the following task and explain your reasoning: ${taskDescription}`
           }
         ],
         response_format: {
@@ -34,9 +34,10 @@ class SonarTimeEstimator {
               type: 'object',
               properties: {
                 hours: { type: 'number' },
-                minutes: { type: 'number' }
+                minutes: { type: 'number' },
+                reasoning: { type: 'string' }
               },
-              required: ['hours', 'minutes']
+              required: ['hours', 'minutes', 'reasoning']
             }
           }
         }
@@ -51,27 +52,32 @@ class SonarTimeEstimator {
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
 
-      return { hours, minutes, isEstimated: true };
+      return { 
+        hours, 
+        minutes, 
+        reasoning: estimate.reasoning,
+        isEstimated: true 
+      };
     } catch (error) {
       // Rate limit error
       if ((error.status === 429) || (error.message && error.message.toLowerCase().includes('rate limit'))) {
-        return { hours: 0, minutes: 0, isEstimated: false, error: 'API rate limit exceeded' };
+        return { hours: 0, minutes: 0, reasoning: 'API rate limit exceeded', isEstimated: false, error: 'API rate limit exceeded' };
       } 
       // Network error
       else if (error.message && error.message.toLowerCase().includes('network')) {
-        return { hours: 0, minutes: 0, isEstimated: false, error: 'network error' };
+        return { hours: 0, minutes: 0, reasoning: 'Network error occurred', isEstimated: false, error: 'network error' };
       }
       // Authentication error
       else if (error.status === 401 || error.status === 403 || (error.message && error.message.toLowerCase().includes('auth'))) {
-        return { hours: 0, minutes: 0, isEstimated: false, error: 'authentication error' };
+        return { hours: 0, minutes: 0, reasoning: 'Authentication error occurred', isEstimated: false, error: 'authentication error' };
       }
       // Timeout error
       else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED' || (error.message && error.message.toLowerCase().includes('timeout'))) {
-        return { hours: 0, minutes: 0, isEstimated: false, error: 'timeout error' };
+        return { hours: 0, minutes: 0, reasoning: 'Request timed out', isEstimated: false, error: 'timeout error' };
       }
       // Parse error
       else {
-        return { hours: 0, minutes: 0, isEstimated: false, error: 'Failed to parse API response' };
+        return { hours: 0, minutes: 0, reasoning: 'Failed to parse API response', isEstimated: false, error: 'Failed to parse API response' };
       }
     }
   }
