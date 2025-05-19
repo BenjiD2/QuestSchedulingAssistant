@@ -36,7 +36,7 @@ const TaskForm = ({ task, onSubmit, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.title || !formData.duration || !formData.startTime) {
       alert('Please fill in all required fields');
@@ -59,8 +59,8 @@ const TaskForm = ({ task, onSubmit, onClose }) => {
       <div className="task-form-container">
         <button className="close-button" onClick={onClose}>×</button>
         <h2>{task ? 'Edit Task' : 'Add New Task'}</h2>
-        
-        <form onSubmit={handleSubmit}>
+
+        <form onSubmit={handleSubmit} data-testid="task-form">
           <div className="form-group">
             <label htmlFor="title">Title *</label>
             <input
