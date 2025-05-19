@@ -1,32 +1,80 @@
-import db from '../database/dbClient.js';
+// server/src/services/userService.js
 
-// create a new user record ------------------------------------
+import User from '../models/User.js';
+
+/**
+ * createUser: creates a new user document in MongoDB
+ */
 export async function createUser(userData) {
-  return db.insert('users', { ...userData });
+  return User.create(userData);
 }
 
-// fetch a user by ID ------------------------------------------
+/**
+ * getUserById: finds a user by their userId (no .exec so mocks can return directly)
+ */
 export async function getUserById(id) {
-  const [first] = await db.select('users', { id });
-  return first ?? null;
+  return User.findOne({ userId: id });
 }
 
-// overwrite the user's xp field -------------------------------
+/**
+ * updateUserName: changes the user's display name
+ */
+export async function updateUserName(id, name) {
+  return User.findOneAndUpdate(
+    { userId: id },
+    { name },
+    { new: true }
+  );
+}
+
+/**
+ * deleteUser: removes a user account
+ */
+export async function deleteUser(id) {
+  const res = await User.deleteOne({ userId: id });
+  return res.deletedCount === 1;
+}
+
+/**
+ * updateUserXP: sets the user's xp to a new value, then saves & returns user
+ */
 export async function updateUserXP(id, xp) {
-  return db.update('users', { id }, { xp });
+  const user = await getUserById(id);
+  if (!user) return null;
+  user.xp = xp;
+  await user.save();
+  return user;
 }
 
-// overwrite the user's streak field ---------------------------
+/**
+ * updateUserStreak: sets the user's streak to a new value, then saves & returns user
+ */
 export async function updateUserStreak(id, streak) {
-  return db.update('users', { id }, { streak });
+  const user = await getUserById(id);
+  if (!user) return null;
+  user.streak = streak;
+  await user.save();
+  return user;
 }
 
-// push a new achievement object onto the array ----------------
+/**
+ * addAchievement: appends an achievement object and returns updated user
+ */
 export async function addAchievement(id, achievement) {
-  return db.update('users', { id }, { achievements: [achievement] });
+  const user = await getUserById(id);
+  if (!user) return null;
+  user.achievements.push(achievement);
+  await user.save();
+  return user;
 }
 
-// push a completed task onto the completedTasks array ---------
+/**
+ * addCompletedTask: appends a completedTask record and returns updated user
+ */
 export async function addCompletedTask(id, task) {
-  return db.update('users', { id }, { completedTasks: [task] });
+  const user = await getUserById(id);
+  if (!user) return null;
+  user.completedTasks.push(task);
+  await user.save();
+  return user;
 }

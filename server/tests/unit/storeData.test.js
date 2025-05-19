@@ -1,136 +1,146 @@
 /**
  * Unit Tests for User Service (server/src/services/userService.js)
  * Tests createUser, getUserById, updateUserXP, updateUserStreak,
- * addAchievement, and addCompletedTask by mocking the DB client.
+ * addAchievement, and addCompletedTask by mocking Mongoose model methods.
  */
 
 import {
-    createUser,
-    getUserById,
-    updateUserXP,
-    updateUserStreak,
-    addAchievement,
-    addCompletedTask
-  } from '../../services/userService'
-  import dbClient from '../../database/dbClient'
-  
-  jest.mock('../../database/dbClient')
-  
-  describe('User Service', () => {
-    const baseUser = {
-      id: 'u1',
-      name: 'Test User',
-      email: 'test@example.com',
-      xp: 0,
-      streak: 0,
-      achievements: [],
-      completedTasks: []
-    }
-  
-    beforeEach(() => {
-      jest.clearAllMocks()
-    })
-  
-    // createUser: inserts a new user record into the database
-    describe('createUser()', () => {
-      it('inserts a new user and returns it', async () => {
-        dbClient.insert.mockResolvedValue(baseUser)
-  
-        const result = await createUser(baseUser)
-  
-        expect(dbClient.insert).toHaveBeenCalledWith('users', baseUser)
-        expect(result).toEqual(baseUser)
-      })
-    })
-  
-    // getUserById: retrieves a user by ID, returns null if not found
-    describe('getUserById()', () => {
-      it('returns a user when found', async () => {
-        dbClient.select.mockResolvedValue([baseUser])
-  
-        const result = await getUserById('u1')
-  
-        expect(dbClient.select).toHaveBeenCalledWith('users', { id: 'u1' })
-        expect(result).toEqual(baseUser)
-      })
-  
-      it('returns null when not found', async () => {
-        dbClient.select.mockResolvedValue([])
-  
-        const result = await getUserById('missing')
-  
-        expect(result).toBeNull()
-      })
-    })
-  
-    // updateUserXP: updates the xp field for a specified user
-    describe('updateUserXP()', () => {
-      it('updates xp for a user and returns the updated record', async () => {
-        const updated = { ...baseUser, xp: 25 }
-        dbClient.update.mockResolvedValue(updated)
-  
-        const result = await updateUserXP('u1', 25)
-  
-        expect(dbClient.update).toHaveBeenCalledWith(
-          'users',
-          { id: 'u1' },
-          { xp: 25 }
-        )
-        expect(result.xp).toBe(25)
-      })
-    })
-  
-    // updateUserStreak: updates the streak field for a specified user
-    describe('updateUserStreak()', () => {
-      it('updates streak for a user and returns the updated record', async () => {
-        const updated = { ...baseUser, streak: 5 }
-        dbClient.update.mockResolvedValue(updated)
-  
-        const result = await updateUserStreak('u1', 5)
-  
-        expect(dbClient.update).toHaveBeenCalledWith(
-          'users',
-          { id: 'u1' },
-          { streak: 5 }
-        )
-        expect(result.streak).toBe(5)
-      })
-    })
-  
-    // addAchievement: appends a new achievement to the user's achievements array
-    describe('addAchievement()', () => {
-      it('adds an achievement and returns the updated record', async () => {
-        const achievement = { type: 'DAILY_WARRIOR', timestamp: Date.now(), description: 'Test' }
-        const updated = { ...baseUser, achievements: [achievement] }
-        dbClient.update.mockResolvedValue(updated)
-  
-        const result = await addAchievement('u1', achievement)
-  
-        expect(dbClient.update).toHaveBeenCalledWith(
-          'users',
-          { id: 'u1' },
-          { achievements: [achievement] }
-        )
-        expect(result.achievements).toContainEqual(achievement)
-      })
-    })
-  
-    // addCompletedTask: appends a completed task to the user's completedTasks array
-    describe('addCompletedTask()', () => {
-      it('adds a completed task and returns the updated record', async () => {
-        const task = { taskId: 't1', completedAt: new Date().toISOString() }
-        const updated = { ...baseUser, completedTasks: [task] }
-        dbClient.update.mockResolvedValue(updated)
-  
-        const result = await addCompletedTask('u1', task)
-  
-        expect(dbClient.update).toHaveBeenCalledWith(
-          'users',
-          { id: 'u1' },
-          { completedTasks: [task] }
-        )
-        expect(result.completedTasks).toContainEqual(task)
-      })
-    })
-  })
-  
+  createUser,
+  getUserById,
+  updateUserXP,
+  updateUserStreak,
+  addAchievement,
+  addCompletedTask
+} from '../../services/userService.js';
+
+jest.mock('../../models/User.js', () => {
+    const fn = () => {};                          // placeholder
+    return {
+      __esModule: true,                           // so “import … default” works
+      default: {
+        create:            jest.fn(),             // User.create()
+        findOne:           jest.fn(),             // User.findOne()
+        findOneAndUpdate:  jest.fn(),             // User.findOneAndUpdate()
+        deleteOne:         jest.fn()              // User.deleteOne()
+      }
+    };
+  });
+  import User from '../../models/User.js';        // import **after** the mock
+
+describe('User Service (Mongoose)', () => {
+  const baseUser = {
+    userId: 'u1',
+    name: 'Test User',
+    email: 'test@example.com',
+    xp: 0,
+    level: 1,
+    completedTasks: [],
+    achievements: []
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // createUser → User.create()
+  describe('createUser()', () => {
+    it('inserts a new user and returns it', async () => {
+      User.create.mockResolvedValue(baseUser);
+
+      const result = await createUser(baseUser);
+
+      expect(User.create).toHaveBeenCalledWith(baseUser);
+      expect(result).toEqual(baseUser);
+    });
+  });
+
+  // getUserById → User.findOne()
+  describe('getUserById()', () => {
+    it('returns a user when found', async () => {
+      User.findOne.mockResolvedValue(baseUser);
+
+      const result = await getUserById('u1');
+
+      expect(User.findOne).toHaveBeenCalledWith({ userId: 'u1' });
+      expect(result).toEqual(baseUser);
+    });
+
+    it('returns null when not found', async () => {
+      User.findOne.mockResolvedValue(null);
+
+      const result = await getUserById('nope');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // updateUserXP → findOne + save
+  describe('updateUserXP()', () => {
+    it('updates xp and saves', async () => {
+      const doc = { ...baseUser, xp: 0, save: jest.fn().mockResolvedValue({ ...baseUser, xp: 42 }) };
+      User.findOne.mockResolvedValue(doc);
+
+      const result = await updateUserXP('u1', 42);
+
+      expect(User.findOne).toHaveBeenCalledWith({ userId: 'u1' });
+      expect(doc.xp).toBe(42);
+      expect(doc.save).toHaveBeenCalled();
+      expect(result.xp).toBe(42);
+    });
+  });
+
+  // updateUserStreak → findOne + save
+  describe('updateUserStreak()', () => {
+    it('updates streak and saves', async () => {
+      const doc = { ...baseUser, streak: 0, save: jest.fn().mockResolvedValue({ ...baseUser, streak: 7 }) };
+      User.findOne.mockResolvedValue(doc);
+
+      const result = await updateUserStreak('u1', 7);
+
+      expect(User.findOne).toHaveBeenCalledWith({ userId: 'u1' });
+      expect(doc.streak).toBe(7);
+      expect(doc.save).toHaveBeenCalled();
+      expect(result.streak).toBe(7);
+    });
+  });
+
+  // addAchievement → findOne + save
+  describe('addAchievement()', () => {
+    it('appends an achievement and saves', async () => {
+      const ach = { type: 'DAILY_WARRIOR', timestamp: Date.now(), description: 'Test' };
+      const doc = {
+        ...baseUser,
+        achievements: [],
+        save: jest.fn().mockResolvedValue({ ...baseUser, achievements: [ach] })
+      };
+      User.findOne.mockResolvedValue(doc);
+
+      const result = await addAchievement('u1', ach);
+
+      expect(User.findOne).toHaveBeenCalledWith({ userId: 'u1' });
+      expect(doc.achievements).toContainEqual(ach);
+      expect(doc.save).toHaveBeenCalled();
+      expect(result.achievements).toContainEqual(ach);
+    });
+  });
+
+  // addCompletedTask → findOne + save
+  describe('addCompletedTask()', () => {
+    it('appends a completed task and saves', async () => {
+      const task = { taskId: 't1', completedAt: new Date(), xpGained: 10 };
+      const doc = {
+        ...baseUser,
+        completedTasks: [],
+        save: jest.fn().mockResolvedValue({ ...baseUser, completedTasks: [task] })
+      };
+      User.findOne.mockResolvedValue(doc);
+
+      const result = await addCompletedTask('u1', task);
+
+      expect(User.findOne).toHaveBeenCalledWith({ userId: 'u1' });
+      expect(doc.completedTasks).toContainEqual(task);
+      expect(doc.save).toHaveBeenCalled();
+      expect(result.completedTasks).toContainEqual(task);
+    });
+  });
+});
