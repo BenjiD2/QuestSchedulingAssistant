@@ -11,10 +11,10 @@ import {
     updateUserStreak,
     addAchievement,
     addCompletedTask
-  } from '../../../server/src/services/userService'
-  import dbClient from '../../../server/src/database/dbClient'
+  } from '../../services/userService'
+  import dbClient from '../../database/dbClient'
   
-  jest.mock('../../../server/src/database/dbClient')
+  jest.mock('../../database/dbClient')
   
   describe('User Service', () => {
     const baseUser = {
