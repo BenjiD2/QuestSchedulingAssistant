@@ -23,11 +23,39 @@ This will:
 make start
 ```
 This will:
-- Start the server
+- Start the server on port 8080
 - Start the client on port 3000
 
 2. Access the application:
 - Open your browser and navigate to `http://localhost:3000`
+
+Note: If you need to debug or see logs from either the client or server separately, you can start them individually:
+```bash
+# Start server only
+cd server && npm start
+
+# Start client only (in a separate terminal)
+cd client && npm start
+```
+
+### Environment Setup
+Before running the application, make sure you have the following environment files set up:
+
+1. Server (server/.env):
+```
+GOOGLE_CLIENT_ID=your_client_id_here
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
+PORT=8080
+```
+
+2. Client (client/.env):
+```
+REACT_APP_AUTH0_DOMAIN=your_auth0_domain
+REACT_APP_AUTH0_CLIENT_ID=your_auth0_client_id
+REACT_APP_AUTH0_CALLBACK_URL=http://localhost:3000/callback
+REACT_APP_API_URL=http://localhost:8080
+```
 
 ### Running Tests
 ```bash
@@ -48,7 +76,8 @@ server/tests/unit/
 ├── taskManager.test.js       # Integration tests for TaskManager service
 ├── calendarService.test.js   # Tests for Google Calendar integration
 ├── taskOperations.test.js    # Tests for task CRUD operations
-└── updateSchedule.test.js    # End-to-end tests for schedule updates
+├── updateSchedule.test.js    # End-to-end tests for schedule updates
+└── sonarTimeEstimate.test.js # Unit tests for AI-powered time estimation
 
 client/src/__tests__/
 ├── GoogleCalendar.test.js    # Unit Tests for Google Calendar integration
@@ -56,31 +85,40 @@ client/src/__tests__/
 └── onboardingAuthenticationUI.test.js  # Unit tests for user onboarding and authentication
 ```
 
-## Acceptance Tests
+## Milestone 4A
 
-Tests to check main functions
+In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users’ schedules accordingly. 
 
-1. User Authentication
-   - Input: Click "Sign In with Google"
-   - Expected: User is redirected to Google OAuth, then back to the app with their profile loaded
+In this second iteration, we’re focusing on improving usability by integrating the backend with the frontend and connecting to a database to store users’ account information. We will gamify task completion, implementing points and streaks to track users’ progress. In addition to account info, the database will store these points and streak information as well. Additionally, we will connect to a Large Language Model (Perplexity) API to compute estimates about task duration and improve the intelligence of our scheduling app.
 
-2. Task Creation
-   - Input: Create a new task with title, start time, and end time
-   - Expected: Task is created and synced with Google Calendar
-   - Test cases:
-     * Valid time range: Should succeed
-     * Overlapping times: Should fail with conflict error
-     * Invalid time range (end before start): Should fail with validation error
+Iteration 2: Planned Implementations
+- Points System & Gamification
+  • Implement points tracking for task completion
+  • Create visual indicators for earned points
 
-3. Authentication and onboarding UI
- 
- | Scenario                          | Steps                                    | Expected outcome                                      |
- | --------------------------------- | ---------------------------------------- | ----------------------------------------------------- |
- | Unauthenticated onboarding screen | Navigate to `/` when not logged in       | "Welcome to QuestChampion" + Register & Login buttons |
- | Register button                   | Click **Register**                       | `auth.register()` is invoked                          |
- | Login button                      | Click **Login**                          | `auth.login()` is invoked                             |
- | Authenticated onboarding greeting | Simulate `auth.isAuthenticated() → true` | Displays "Hello, {user.name}"                         |
- | HomePage greeting & tasks         | Render `HomePageUI user={…} tasks=[…]`   | Renders `<h1>Hello, …</h1>` and correct `<li>` count  |
+- Database Integration
+  • Set up user data storage to store user authentication and persist data
+  • Maintain point history
+
+- Quest Streaks
+  • Develop streak tracking system
+  • Implement streak-based rewards
+
+- AI-Powered Task Estimation
+  • Integrate AI model for task duration prediction
+  • Implement smart scheduling suggestions
+
+- Frontend Integration
+  • View upcoming events pulled from their Google Calendar.
+  • Create and delete events directly from the interface.
+
+| Use Case                                  | Students                                     |
+|-------------------------------------------|----------------------------------------------|
+| Add & Manage points                       | Raouf Abujaber & Reece VanDeWeghe            |
+| Store user data in database               | Alberto Chiapparoli                          |
+| Display quest streaks                     | Brayley Starr                                |
+| AI-generate time estimates for tasks      | Isis Decrem & Emily Bae                      |
+| Integrate with frontend                   | Benji Duan & Kanchan Naik                    |
 
 
 ## Implementation Details
@@ -113,6 +151,19 @@ Tests to check main functions
     * Calendar sync with UTC timezone preservation
     * Comprehensive error handling for date operations
 
+ * **AI-Powered Time Estimation**
+    * Integration with Perplexity's Sonar API for intelligent task duration estimation
+    * Input validation for task descriptions (minimum length, non-empty)
+    * Structured JSON response handling with hours and minutes
+    * Comprehensive error handling:
+      - API rate limiting
+      - Network failures
+      - Authentication errors
+      - Timeout handling
+      - Malformed responses
+    * Task integration with automatic duration updates
+    * Support for decimal hours and zero-duration tasks
+
  * **Date and Time Handling**
     * All dates stored and compared in UTC format
     * Automatic timezone conversion for user display
@@ -120,28 +171,14 @@ Tests to check main functions
     * Support for back-to-back tasks without conflicts
     * Proper handling of daylight saving time transitions
 
-## Team Contributions
- 
- | Pair / Person       | Responsibilities                                                                                 |
- | ------------------  | ------------------------------------------------------------------------------------------------ |
- | **Alberto & Isis**  | Implemented React Auth branching in OnboardingUI and HomePageUI; wrote corresponding unit tests. |
- | **Kanchan & Benji** | Implemented Google Authentication and Import Calendar                                            |
- | **Raouf & Reece**   | Implemented Task Functionality                                                                   |
- | **Brayley & Emily** | Implemented Update Calendar/Task Scheduling                                                      |
+* **User Data Storage & Testing**
+   * Service functions: createUser, getUserById, updateUserXP, updateUserStreak, addAchievement, addCompletedTask.
+   * Unit tests mock dbClient to verify:
+   * createUser calls insert('users', userData) and returns created record.
+   * getUserById calls select('users', { id }) and returns first match or null.
+   * updateUserXP and updateUserStreak call update('users', { id }, { xp/streak }).
+   * addAchievement and addCompletedTask append to arrays and call update accordingly.
 
- 
- ---
- 
- ## Changes Since Last Milestone
- 
- * Added test-mode branching in both components to satisfy unit tests without altering production behavior
- * Configured Jest to mock CSS and unify React copies (`moduleNameMapper`)
- * Implemented UTC timezone handling for consistent date operations
- * Enhanced schedule conflict detection with proper timezone support
- * Added comprehensive timezone-aware test cases
- * Improved error handling for calendar sync operations
-
- ---
  
  ## Notes
  
