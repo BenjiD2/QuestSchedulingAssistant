@@ -3,6 +3,8 @@ import './Dashboard.css';
 import { useAuth0 } from "@auth0/auth0-react";
 import TaskForm from './TaskForm';
 import Profile from './Profile';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import EditAccount from './EditAccount';
 
 import { gapi } from "gapi-script";
@@ -237,7 +239,13 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       
       // Update achievements if there are new ones
       if (progressData.achievements?.length > 0) {
+        // Update the visible recent achievements panel
         setAchievements(prev => [...progressData.achievements, ...prev].slice(0, 3));
+      
+        // 🔥 Show toasts for just-earned achievements
+        progressData.achievements.forEach((a) => {
+          toast(`🎉 ${a.name}: ${a.description}`);
+        });
       }
 
       // Update task completion
