@@ -1,52 +1,115 @@
 // server/index.js
 require('dotenv').config();
-import express from 'express';
-import cors from 'cors';
-import mongoose from 'mongoose';
-import GoogleCalendarService from './models/GoogleCalendarService.js';
-import TaskManager from './models/TaskManager.js';
-import googleConfig from './config/google.js';
-import userRoutes from './routes/userRoutes.js';
+const express = require('express');
+const cors = require('cors');
+const GoogleCalendarService = require('./models/GoogleCalendarService');
+const TaskManager = require('./models/TaskManager');
+const googleConfig = require('./config/google');
+const userRoutes = require('./routes/userRoutes');
+const store = require('./services/store');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
-app.use('/api', userRoutes);
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser:    true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB connected'))
-.catch(err => console.error('MongoDB error', err));
 // Initialize services
-const calendarService = new GoogleCalendarService(googleConfig);
-const taskManager = new TaskManager(calendarService);
+let calendarService = null;
+let taskManager = null;
+
+try {
+  calendarService = new GoogleCalendarService(googleConfig);
+  taskManager = new TaskManager(calendarService);
+} catch (error) {
+  console.log('Google Calendar service not initialized:', error.message);
+  taskManager = new TaskManager(null);
+}
 
 // Routes
 app.get('/', (req, res) => {
   res.send('Quest Scheduling Assistant API');
 });
 
-// Add time estimation route
-const timeEstimationRoutes = require('./routes/timeEstimation');
-app.use('/api', timeEstimationRoutes);
-
-// Google Calendar authentication endpoint
-app.post('/auth/google', async (req, res) => {
+// XP update endpoint
+app.post('/api/users/xp', async (req, res) => {
   try {
-    const { token } = req.body;
-    if (!token) {
-      return res.status(400).json({ error: 'Access token is required' });
-    }
+    console.log('Received XP update request:', req.body);
+    const { userId, xpGained } = req.body;
     
-    calendarService.setAccessToken(token);
-    res.json({ message: 'Successfully authenticated with Google Calendar' });
+    // Strict input validation
+    if (!userId || typeof userId !== 'string') {
+      console.log('Invalid userId:', userId);
+      return res.status(400).json({ error: 'Invalid userId: must be a non-empty string' });
+    }
+
+    if (typeof xpGained !== 'number' || isNaN(xpGained) || xpGained < 0) {
+      console.log('Invalid xpGained:', xpGained);
+      return res.status(400).json({ error: 'Invalid xpGained: must be a positive number' });
+    }
+
+    // Initialize user if they don't exist
+    if (!store.users.has(userId)) {
+      console.log('Creating new user:', userId);
+      store.users.set(userId, {
+        id: userId,
+        name: 'Anonymous User',
+        xp: 0,
+        level: 1,
+        streak: 0,
+        achievements: []
+      });
+    }
+
+    // Get user and update XP
+    const user = store.users.get(userId);
+    if (!user) {
+      console.error('Failed to get/create user:', userId);
+      return res.status(500).json({ error: 'Failed to get/create user' });
+    }
+
+    console.log('Current user data:', user);
+
+    // Ensure XP is a number and has a default value
+    const oldXp = typeof user.xp === 'number' ? user.xp : 0;
+    const newXp = oldXp + xpGained;
+
+    // Update user data
+    const updatedUser = {
+      ...user,
+      xp: newXp,
+      level: store.calculateLevel(newXp)
+    };
+
+    // Save updated user
+    store.users.set(userId, updatedUser);
+
+    const response = {
+      id: updatedUser.id,
+      xp: updatedUser.xp,
+      level: updatedUser.level,
+      streak: updatedUser.streak,
+      progress: store.getProgressToNextLevel(updatedUser.xp)
+    };
+
+    console.log('Updated user data:', response);
+    res.json(response);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('XP update error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to update XP',
+      details: error.message,
+      userId: req.body?.userId
+    });
   }
 });
+
+// Add routes
+app.use('/api', userRoutes);
+app.use('/api', require('./routes/timeEstimation'));
 
 // Task endpoints
 app.post('/tasks', async (req, res) => {
@@ -88,6 +151,10 @@ app.get('/tasks', async (req, res) => {
 // Calendar events endpoint
 app.get('/calendar/events', async (req, res) => {
   try {
+    if (!calendarService) {
+      return res.status(503).json({ error: 'Google Calendar service not available' });
+    }
+
     const { token } = req.query;
     if (!token) {
       return res.status(400).json({ error: 'Access token is required' });

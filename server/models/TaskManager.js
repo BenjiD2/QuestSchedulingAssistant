@@ -2,12 +2,11 @@
  * Manages tasks and their synchronization with Google Calendar
  */
 const Task = require('./Task');
-const GoogleCalendarService = require('./GoogleCalendarService');
 
 class TaskManager {
-    constructor() {
+    constructor(calendarService = null) {
       this.tasks = []; 
-    this.calendarService = new GoogleCalendarService();
+      this.calendarService = calendarService;
     }
   
   /**
@@ -34,17 +33,18 @@ class TaskManager {
         throw new Error('Schedule conflict detected');
       }
 
-      // Try to sync with calendar
-      let calendarEvent;
-      try {
-        calendarEvent = await this.calendarService.addEvent(task);
-        task.googleEventId = calendarEvent?.id || calendarEvent?.eventId;
-      } catch (error) {
-        throw error; // Preserve the original error
+      // Try to sync with calendar if service is available
+      if (this.calendarService) {
+        try {
+          const calendarEvent = await this.calendarService.addEvent(task);
+          task.googleEventId = calendarEvent?.id || calendarEvent?.eventId;
+        } catch (error) {
+          console.log('Failed to sync with calendar:', error.message);
+        }
       }
 
       // Add task to the list
-        this.tasks.push(task);
+      this.tasks.push(task);
       return task;
     } catch (error) {
       throw new Error(`Failed to add task: ${error.message}`);

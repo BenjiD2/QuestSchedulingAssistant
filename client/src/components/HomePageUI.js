@@ -16,6 +16,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [questProgress, setQuestProgress] = useState(65);
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -136,15 +137,73 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     setTasks(tasks.filter(task => task.taskId !== taskId));
   };
 
-  const handleCompleteTask = (taskId) => {
-    setTasks(tasks.map(task => {
-      if (task.taskId === taskId) {
-        const xpGained = calculateTaskXP(task);
-        // user.addXP(xpGained);   // we don't support this integration yet
-        return { ...task, completed: true };
+  const handleCompleteTask = async (taskId) => {
+    const task = tasks.find(t => t.taskId === taskId);
+    if (!task) {
+      console.log('Task not found:', taskId);
+      return;
+    }
+
+    try {
+      console.log('Current user:', user);
+      console.log('Task being completed:', task);
+
+      // Calculate XP for the task using the local function
+      const xpGained = Math.round((task.duration / 30) * 10 * (
+        task.category === 'work' ? 1.5 :
+        task.category === 'study' ? 1.3 :
+        task.category === 'exercise' ? 1.4 : 1.0
+      ));
+
+      console.log('Calculated XP gain:', xpGained);
+      console.log('Making request with userId:', user.sub);
+
+      // Update task completion status locally
+      setTasks(tasks.map(t => {
+        if (t.taskId === taskId) {
+          return { ...t, completed: true };
+        }
+        return t;
+      }));
+
+      // Update user's XP in the backend
+      const requestData = {
+        userId: user.sub,
+        xpGained: xpGained
+      };
+      console.log('Sending request data:', requestData);
+
+      const response = await fetch('http://localhost:8080/api/users/xp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      console.log('Response status:', response.status);
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to update XP');
       }
-      return task;
-    }));
+
+      // Update the progress bar with the new XP value
+      const progress = (responseData.xp % 100);
+      setQuestProgress(progress);
+      
+    } catch (error) {
+      console.error('Error updating XP:', error);
+      console.error('Error stack:', error.stack);
+      // Revert task completion if XP update failed
+      setTasks(tasks.map(t => {
+        if (t.taskId === taskId) {
+          return { ...t, completed: false };
+        }
+        return t;
+      }));
+    }
   };
 
   const calculateTaskXP = (task) => {
@@ -248,7 +307,6 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
 
   const streakDays = 7;
   const currentLevel = 3;
-  const questProgress = 65;
   const questGoal = 100;
   const achievements = [
     { icon: '🔥', name: 'On Fire', description: '7-day streak' },
