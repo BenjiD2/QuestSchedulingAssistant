@@ -2,7 +2,7 @@
 // This file defines endpoints for fetching, updating, and deleting user information.
 
 const express = require('express');
-const store = require('../services/store'); // In-memory store (retained for now)
+// const store = require('../services/store'); // In-memory store - No longer needed here
 const mongoStore = require('../services/mongoStore'); // MongoDB store
 const logger = require('../services/logger'); // Logger
 
@@ -42,12 +42,9 @@ router.get('/users/:id', async (req, res) => {
     const user = await mongoStore.getUser(userId);
     if (!user) {
       logger.log('API_INFO', 'GET_USER', `User not found in MongoDB: ${userId}`);
-      // Optionally, you could check the in-memory store as a fallback if desired during transition
-      // const inMemoryUser = store.users.get(userId);
-      // if (inMemoryUser) { ... }
       return res.status(404).json({ error: 'User not found' });
     }
-    logger.log('API_SUCCESS', 'GET_USER', `User fetched successfully from MongoDB: ${userId}`);
+    logger.log('API_SUCCESS', 'GET_USER', `User fetched successfully from MongoDB: ${userId}`, { user }); // Log the fetched user
     res.json(user);
   } catch (error) {
     logger.log('API_ERROR', 'GET_USER', `Error fetching user ${userId}: ${error.message}`, { error });
@@ -55,26 +52,51 @@ router.get('/users/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/users/:id — update display name (currently uses in-memory, will be updated)
+// PATCH /api/users/:id — update user data in MongoDB
 router.patch('/users/:id', async (req, res) => {
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: 'name is required' });
-  
-  // This needs to be updated to use mongoStore.updateUser similar to the GET route
-  const user = store.users.get(req.params.id);
-  if (!user) return res.sendStatus(404);
-  
-  user.name = name;
-  store.users.set(req.params.id, user);
-  res.json(user);
+  const userId = req.params.id;
+  const updates = req.body;
+
+  // Basic validation: ensure there are updates to apply
+  if (Object.keys(updates).length === 0) {
+    logger.log('API_ERROR', 'UPDATE_USER', `No updates provided for user ${userId}.`, { body: req.body });
+    return res.status(400).json({ error: 'No updates provided.' });
+  }
+  // Example: if only name is updatable for now via this route
+  // if (!updates.name) return res.status(400).json({ error: 'name is required for update' });
+
+  logger.log('API_CALL', 'UPDATE_USER', `Attempting to update user ${userId} in MongoDB.`, { userId, updates });
+  try {
+    const updatedUser = await mongoStore.updateUser(userId, updates);
+    if (!updatedUser) {
+      logger.log('API_ERROR', 'UPDATE_USER', `User ${userId} not found or update failed in MongoDB.`);
+      return res.status(404).json({ error: 'User not found or update failed.' });
+    }
+    logger.log('API_SUCCESS', 'UPDATE_USER', `User ${userId} updated successfully in MongoDB.`, { updatedUser });
+    res.json(updatedUser);
+  } catch (error) {
+    logger.log('API_ERROR', 'UPDATE_USER', `Error updating user ${userId}: ${error.message}`, { error });
+    res.status(500).json({ error: 'Internal server error updating user.', details: error.message });
+  }
 });
 
-// DELETE /api/users/:id — delete account (currently uses in-memory, will be updated)
+// DELETE /api/users/:id — delete account from MongoDB
 router.delete('/users/:id', async (req, res) => {
-  // This needs to be updated to use mongoStore for deletion
-  if (!store.users.has(req.params.id)) return res.sendStatus(404);
-  store.users.delete(req.params.id);
-  res.sendStatus(204);
+  const userId = req.params.id;
+  logger.log('API_CALL', 'DELETE_USER', `Attempting to delete user ${userId} from MongoDB.`);
+  try {
+    const success = await mongoStore.deleteUser(userId);
+    if (!success) {
+      // deleteUser in mongoStore logs if user or progress not found
+      logger.log('API_ERROR', 'DELETE_USER', `User ${userId} not found or deletion failed in MongoDB.`);
+      return res.status(404).json({ error: 'User not found or deletion failed.' });
+    }
+    logger.log('API_SUCCESS', 'DELETE_USER', `User ${userId} and their progress deleted successfully from MongoDB.`);
+    res.sendStatus(204); // Successfully deleted, no content to return
+  } catch (error) {
+    logger.log('API_ERROR', 'DELETE_USER', `Error deleting user ${userId}: ${error.message}`, { error });
+    res.status(500).json({ error: 'Internal server error deleting user.', details: error.message });
+  }
 });
 
 module.exports = router;

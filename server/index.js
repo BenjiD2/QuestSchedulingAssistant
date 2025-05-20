@@ -9,7 +9,7 @@ const TaskManager = require('./models/TaskManager');
 const googleConfig = require('./config/google');
 const userRoutes = require('./routes/userRoutes');
 const taskRoutes = require('./routes/taskRoutes');
-const store = require('./services/store');
+// const store = require('./services/store'); // In-memory store removed
 const mongoStore = require('./services/mongoStore');
 const { connectToDatabase } = require('./database/mongodb');
 const logger = require('./services/logger');
@@ -29,24 +29,28 @@ connectToDatabase()
       console.log('✅ MongoDB connected successfully');
       console.log('📊 User and Task data operations are now primarily using MongoDB.');
     } else {
-      console.log('⚠️ Warning: MongoDB connection failed, falling back to in-memory database for some operations');
+      // This case should ideally not be hit if connectToDatabase handles its errors and doesn't resolve true/false
+      console.log('⚠️ Warning: MongoDB connection failed. The application might not work as expected.');
     }
   })
   .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-    console.log('⚠️ Falling back to in-memory database for some operations');
+    console.error('❌ MongoDB initial connection error:', err);
+    // Depending on the app's requirements, you might want to exit here if DB is critical
+    console.log('⚠️ MongoDB connection failed. The application might not work as expected.');
   });
 
-// Initialize services
+// Initialize services (GoogleCalendarService and TaskManager might still use in-memory store or be legacy)
+// Review TaskManager and GoogleCalendarService if they directly interact with 'store' for user/task data.
+// For now, their initialization is kept as is, assuming their core logic is independent of user/task persistence layer we just migrated.
 let calendarService = null;
 let taskManager = null;
 
 try {
   calendarService = new GoogleCalendarService(googleConfig);
-  taskManager = new TaskManager(calendarService);
+  taskManager = new TaskManager(calendarService); // TaskManager might need review if it uses 'store'
 } catch (error) {
   console.log('Google Calendar service not initialized:', error.message);
-  taskManager = new TaskManager(null);
+  taskManager = new TaskManager(null); // TaskManager might need review
 }
 
 // Routes
@@ -54,78 +58,47 @@ app.get('/', (req, res) => {
   res.send('Quest Scheduling Assistant API');
 });
 
-// XP update endpoint
+// XP update endpoint - Now fully uses MongoDB
 app.post('/api/users/xp', async (req, res) => {
+  logger.log('API_CALL', 'UPDATE_XP', 'Received XP update request', req.body);
   try {
-    console.log('Received XP update request:', req.body);
     const { userId, xpGained, revert } = req.body;
     
-    // Validate inputs
     if (!userId || typeof userId !== 'string') {
-      console.log('Invalid userId:', userId);
+      logger.log('API_ERROR', 'UPDATE_XP', 'Invalid userId', { userId });
       return res.status(400).json({ error: 'Invalid userId: must be a non-empty string' });
     }
 
     if (typeof xpGained !== 'number' || isNaN(xpGained) || xpGained < 0) {
-      console.log('Invalid xpGained:', xpGained);
-      return res.status(400).json({ error: 'Invalid xpGained: must be a positive number' });
+      logger.log('API_ERROR', 'UPDATE_XP', 'Invalid xpGained', { xpGained });
+      return res.status(400).json({ error: 'Invalid xpGained: must be a non-negative number' });
     }
 
-    // Update progress using the in-memory system
-    const updatedProgress = revert
-      ? store.revertUserXP(userId, xpGained)
-      : store.updateUserXP(userId, xpGained);
-    
-    logger.log('In-Memory', 'UPDATE', `${revert ? 'Reverted' : 'Updated'} XP for user ${userId}`, {
-      xpChange: revert ? -xpGained : xpGained,
-      newXP: updatedProgress.xp,
-      newLevel: updatedProgress.level
-    });
-    
-    // Also update in MongoDB (but don't wait for it)
+    let updatedProgress;
     if (revert) {
-      mongoStore.revertUserXP(userId, xpGained)
-        .then(result => {
-          if (result) {
-            console.log('MongoDB XP revert succeeded:', {
-              userId,
-              xpLost: xpGained,
-              newXP: result.xp,
-              newLevel: result.level
-            });
-          }
-        })
-        .catch(err => {
-          console.error('MongoDB XP revert error:', err);
-        });
+      logger.log('API_INFO', 'UPDATE_XP', `Attempting to revert ${xpGained} XP for user ${userId} via MongoDB.`);
+      updatedProgress = await mongoStore.revertUserXP(userId, xpGained);
     } else {
-      mongoStore.updateUserXP(userId, xpGained)
-        .then(result => {
-          if (result) {
-            console.log('MongoDB XP update succeeded:', {
-              userId,
-              xpGained,
-              newXP: result.xp,
-              newLevel: result.level,
-              achievements: result.achievements
-            });
-          }
-        })
-        .catch(err => {
-          console.error('MongoDB XP update error:', err);
-        });
+      logger.log('API_INFO', 'UPDATE_XP', `Attempting to grant ${xpGained} XP to user ${userId} via MongoDB.`);
+      updatedProgress = await mongoStore.updateUserXP(userId, xpGained);
     }
     
-    console.log('Updated progress:', updatedProgress);
+    if (!updatedProgress) {
+      // mongoStore functions already log errors internally
+      logger.log('API_ERROR', 'UPDATE_XP', `Failed to update/revert XP for user ${userId} in MongoDB.`);
+      return res.status(500).json({ error: 'Failed to update XP in database.' });
+    }
+
+    logger.log('API_SUCCESS', 'UPDATE_XP', `XP for user ${userId} ${revert ? 'reverted' : 'updated'} successfully via MongoDB.`, updatedProgress);
     res.json(updatedProgress);
     
   } catch (error) {
-    console.error('XP update error:', error);
-    console.error('Error stack:', error.stack);
+    // This catch block might be redundant if mongoStore functions handle their errors and don't throw up to here,
+    // or if they throw specific errors we want to handle differently.
+    logger.log('API_ERROR', 'UPDATE_XP', 'Unexpected error during XP update.', { message: error.message, stack: error.stack, body: req.body });
     res.status(500).json({ 
-      error: 'Failed to update XP',
-      details: error.message,
-      userId: req.body?.userId
+      error: 'Failed to update XP due to an unexpected server error.',
+      details: error.message
     });
   }
 });
@@ -135,7 +108,7 @@ app.use('/api', userRoutes);
 app.use('/api', taskRoutes);
 app.use('/api', require('./routes/timeEstimation'));
 
-// Task endpoints (These are now handled by taskRoutes.js, so we comment them out)
+// Task endpoints (These are now handled by taskRoutes.js, so they remain commented out)
 /*
 app.post('/tasks', async (req, res) => {
   try {
@@ -198,7 +171,7 @@ app.get('/tasks', async (req, res) => {
 });
 */
 
-// Calendar events endpoint
+// Calendar events endpoint (Assumed independent of user/task data store for now)
 app.get('/calendar/events', async (req, res) => {
   try {
     if (!calendarService) {
@@ -217,39 +190,47 @@ app.get('/calendar/events', async (req, res) => {
   }
 });
 
-// Get user achievements
+// Get user achievements - Now relies solely on mongoStore, and primarily user data is fetched via /api/users/:id
 app.get('/api/users/:userId/achievements', async (req, res) => {
+  const { userId } = req.params;
+  logger.log('API_CALL', 'GET_ACHIEVEMENTS', `Attempting to retrieve achievements for user ${userId} from MongoDB.`);
   try {
-    const { userId } = req.params;
-    console.log(`📚 Attempting to retrieve achievements for user ${userId} from MongoDB...`);
+    // mongoStore.getUser already populates achievements from UserProgress.
+    // This dedicated endpoint might be redundant if client always fetches full user data.
+    // However, if called directly, it should use mongoStore.getUserAchievements or mongoStore.getUser.
+    // For consistency and to ensure we get the latest, let's use mongoStore.getUserAchievements.
     
-    // First try to get achievements from MongoDB
-    const mongoAchievements = await mongoStore.getUserAchievements(userId);
-    console.log(`📊 Retrieved ${mongoAchievements.length} achievements from MongoDB for user ${userId}`);
+    const achievements = await mongoStore.getUserAchievements(userId);
     
-    // If MongoDB returns achievements, use them, otherwise fall back to in-memory
-    let achievements;
-    if (mongoAchievements.length > 0) {
-      achievements = mongoAchievements;
-      console.log('✅ Using achievements from MongoDB');
-    } else {
-      achievements = store.getUserAchievements(userId);
-      logger.inMemory.fallback('achievements', userId, { count: achievements.length });
-      console.log(`⚠️ Falling back to in-memory achievements (${achievements.length} achievements)`);
+    if (!achievements) {
+        // This case implies an error within mongoStore.getUserAchievements or user not found for achievements.
+        logger.log('API_ERROR', 'GET_ACHIEVEMENTS', `Could not retrieve achievements for user ${userId} from MongoDB, or user has no UserModel.`);
+        return res.status(404).json({ error: 'Achievements not found or user does not exist.'});
     }
     
+    logger.log('API_SUCCESS', 'GET_ACHIEVEMENTS', `Retrieved ${achievements.length} achievements for user ${userId} from MongoDB.`);
     res.json(achievements);
+
   } catch (error) {
-    console.error('❌ Error fetching achievements:', error);
-    // Fall back to in-memory achievements
-    try {
-      const achievements = store.getUserAchievements(userId);
-      logger.inMemory.fallback('achievements', userId, { count: achievements.length });
-      console.log(`⚠️ Falling back to in-memory achievements (${achievements.length} achievements)`);
-      res.json(achievements);
-    } catch (fallbackError) {
-      res.status(500).json({ error: 'Failed to fetch achievements' });
+    logger.log('API_ERROR', 'GET_ACHIEVEMENTS', `Error fetching achievements for ${userId}: ${error.message}`, { error });
+    res.status(500).json({ error: 'Internal server error fetching achievements.', details: error.message });
+  }
+});
+
+// Leaderboard endpoint
+app.get('/api/leaderboard', async (req, res) => {
+  logger.log('API_CALL', 'GET_LEADERBOARD', 'Attempting to fetch leaderboard from MongoDB.');
+  try {
+    const leaderboard = await mongoStore.getLeaderboard();
+    if (!leaderboard) {
+      logger.log('API_ERROR', 'GET_LEADERBOARD', 'Failed to fetch leaderboard from MongoDB.');
+      return res.status(500).json({ error: 'Failed to fetch leaderboard.' });
     }
+    logger.log('API_SUCCESS', 'GET_LEADERBOARD', `Leaderboard fetched successfully with ${leaderboard.length} users.`);
+    res.json(leaderboard);
+  } catch (error) {
+    logger.log('API_ERROR', 'GET_LEADERBOARD', `Error fetching leaderboard: ${error.message}`, { error });
+    res.status(500).json({ error: 'Internal server error fetching leaderboard.', details: error.message });
   }
 });
 
@@ -346,14 +327,13 @@ app.get('/api/users/:userId', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
+  if (process.env.NODE_ENV !== 'production') {
+    // console.log(`💾 In-memory database is still being used as fallback`); // Old message
+  } else {
+    // console.log('Production mode: In-memory store usage should be minimal or disabled.');
+  }
+});
 
-if (require.main === module) {
-  // Start the server only if this file is run directly
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`📊 MongoDB integration is active (read-only for now)`);
-    console.log(`💾 In-memory database is still being used as fallback`);
-  });
-}
-
-module.exports = app; // Export the app instance for testing
+module.exports = app; // For testing purposes

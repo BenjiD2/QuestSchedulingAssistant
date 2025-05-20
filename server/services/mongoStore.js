@@ -651,6 +651,47 @@ const getTaskById = async (taskId) => {
   }
 };
 
+/**
+ * Delete a user and their progress from MongoDB
+ * @param {string} userId - The ID of the user to delete
+ * @returns {Promise<boolean>} True if successful, false otherwise
+ */
+const deleteUser = async (userId) => {
+  try {
+    if (!getConnectionStatus()) {
+      await connectToDatabase();
+    }
+    const decodedUserId = decodeURIComponent(userId);
+
+    // Delete user progress first
+    const progressDeletionResult = await UserProgressModel.deleteOne({ userId: decodedUserId });
+    if (progressDeletionResult.deletedCount === 0) {
+      logger.log('MongoDB', 'WARN', `No user progress found to delete for user ID: ${decodedUserId}. Proceeding with user deletion.`);
+      // Not necessarily an error, user might not have progress. Log it and continue.
+    } else {
+      logger.mongodb.delete('userProgress', decodedUserId, true);
+    }
+
+    // Delete the user
+    const userDeletionResult = await UserModel.deleteOne({ userId: decodedUserId });
+    if (userDeletionResult.deletedCount === 0) {
+      logger.mongodb.delete('user', decodedUserId, false, { error: 'User not found or already deleted' });
+      return false; // User themselves not found
+    }
+
+    // Optionally: Delete user's tasks? This could be a cascading delete or kept separate.
+    // For now, we are only deleting the user and their progress.
+    // const taskDeletionResult = await TaskModel.deleteMany({ userId: decodedUserId });
+    // logger.log('MongoDB', 'INFO', `Deleted ${taskDeletionResult.deletedCount} tasks for user ${decodedUserId}`);
+
+    logger.mongodb.delete('user', decodedUserId, true);
+    return true;
+  } catch (error) {
+    logger.mongodb.delete('user', decodedUserId, false, { error: error.message });
+    return false;
+  }
+};
+
 module.exports = {
   getUser,
   getOrCreateUser,
@@ -664,5 +705,6 @@ module.exports = {
   createTask,
   updateTask,
   deleteTask,
-  getTaskById
+  getTaskById,
+  deleteUser
 }; 
