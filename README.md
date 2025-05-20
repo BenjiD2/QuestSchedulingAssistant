@@ -120,6 +120,19 @@ Ran all test suites.
 
 This output shows each test suite that was run, whether it passed (`PASS`) or failed (`FAIL`), and a summary at the end indicating the total number of test suites and tests, along with code coverage information.
 
+## Acceptance Test Details
+
+The acceptance tests located in `server/tests/acceptance/acceptance.test.js` verify key behaviors of the server API endpoints. These tests are designed to confirm that the application responds as expected to various requests, focusing on endpoint accessibility and input validation, independent of database persistence.
+
+Here are the specific scenarios covered by the current acceptance tests:
+
+*   **Root Endpoint Accessibility:** Verifies that the root endpoint (`/`) is accessible and returns a 200 status code with the expected welcome message (`Quest Scheduling Assistant API`). This confirms the basic functionality of the server being up and running.
+*   **User XP Update Endpoint Input Validation (`POST /api/users/xp`):** Tests that this endpoint correctly handles invalid input. It specifically checks that a 400 status code and an appropriate error message are returned when the `userId` is missing or invalid, or when `xpGained` is not a valid positive number. This demonstrates the server's input validation logic for this critical endpoint.
+*   **Calendar Events Endpoint Token Requirement (`GET /calendar/events`):** Confirms that attempting to access the calendar events endpoint without providing an access token results in a 400 status code and a specific error message indicating that the token is required. This verifies a necessary security/authentication check for this endpoint.
+*   **Time Estimation Endpoint Accessibility (`POST /api/estimate-time` - Placeholder):** This test checks for the basic accessibility of a time estimation endpoint. It verifies that a POST request to this endpoint receives a successful response (status code 200-399), indicating that the endpoint is reachable and generally functioning, although it does not validate the estimation logic itself. *Note: You may need to adjust the endpoint path in the test file (`server/tests/acceptance/acceptance.test.js`) to match your actual implementation of the time estimation endpoint.* This test demonstrates that the API route for time estimation is set up and responsive.
+
+These acceptance tests provide confidence that the core API endpoints are correctly defined, accessible, and perform basic input validation as expected, contributing to the overall reliability of the application's server-side functionality.
+
 ## Milestone 4A
 
 In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users' schedules accordingly. 
