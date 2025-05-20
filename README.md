@@ -65,8 +65,8 @@ make test
 # Run only client tests
 make test-client
 
-# Run only server tests
-make test-server
+# Run only server tests (Includes unit and acceptance tests)
+cd server && npm test
 ```
 
 ### Test Files Structure
@@ -78,6 +78,8 @@ server/tests/unit/
 ├── taskOperations.test.js    # Tests for task CRUD operations
 ├── updateSchedule.test.js    # End-to-end tests for schedule updates
 └── sonarTimeEstimate.test.js # Unit tests for AI-powered time estimation
+server/tests/acceptance/
+├── acceptance.test.js        # Acceptance tests for core API endpoint behavior and validation
 
 client/src/__tests__/
 ├── GoogleCalendar.test.js    # Unit Tests for Google Calendar integration
@@ -85,11 +87,44 @@ client/src/__tests__/
 └── onboardingAuthenticationUI.test.js  # Unit tests for user onboarding and authentication
 ```
 
+## Test Output
+
+When you run the server tests using `cd server && npm test`, you will see output similar to this (specific test names and timings may vary):
+
+```
+> server@1.0.0 test
+> jest
+
+ PASS   server  tests/unit/eventsToTasks.test.js
+ PASS   server  tests/unit/task.test.js
+ PASS   server  tests/unit/taskOperations.test.js
+ PASS   server  tests/unit/storeData.test.js
+ PASS   server  tests/unit/taskManager.test.js
+ PASS   server  tests/unit/calendarService.test.js
+ PASS   server  tests/unit/sonarTimeEstimate.test.js
+ PASS   server  tests/unit/updateSchedule.test.js
+ PASS   server  tests/acceptance/acceptance.test.js
+
+---------------------------|---------|----------|---------|---------|---------------------------------------
+File                       | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+---------------------------|---------|----------|---------|---------|---------------------------------------
+All files                  |   XX.XX |    XX.XX |   XX.XX |   XX.XX |
+ [Detailed coverage information follows] 
+---------------------------|---------|----------|---------|---------|---------------------------------------
+Test Suites: X passed, X total
+Tests:       Y passed, Y total
+Snapshots:   Z total
+Time:        X.XXX s, estimated Y s
+Ran all test suites.
+```
+
+This output shows each test suite that was run, whether it passed (`PASS`) or failed (`FAIL`), and a summary at the end indicating the total number of test suites and tests, along with code coverage information.
+
 ## Milestone 4A
 
-In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users’ schedules accordingly. 
+In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users' schedules accordingly. 
 
-In this second iteration, we’re focusing on improving usability by integrating the backend with the frontend and connecting to a database to store users’ account information. We will gamify task completion, implementing points and streaks to track users’ progress. In addition to account info, the database will store these points and streak information as well. Additionally, we will connect to a Large Language Model (Perplexity) API to compute estimates about task duration and improve the intelligence of our scheduling app.
+In this second iteration, we're focusing on improving usability by integrating the backend with the frontend and connecting to a database to store users' account information. We will gamify task completion, implementing points and streaks to track users' progress. In addition to account info, the database will store these points and streak information as well. Additionally, we will connect to a Large Language Model (Perplexity) API to compute estimates about task duration and improve the intelligence of our scheduling app.
 
 Iteration 2: Planned Implementations
 - Points System & Gamification
