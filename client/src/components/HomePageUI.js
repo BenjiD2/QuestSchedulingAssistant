@@ -26,6 +26,13 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const TASKS_PER_PAGE = 3;
+  const [currentTaskPage, setCurrentTaskPage] = useState(1);
+  const totalTaskPages = Math.ceil(tasks.length / TASKS_PER_PAGE);
+  const paginatedTasks = tasks.slice(
+    (currentTaskPage - 1) * TASKS_PER_PAGE,
+    currentTaskPage * TASKS_PER_PAGE
+  );
 
   function getStartOfWeekISO() {
     const now = new Date();
@@ -505,17 +512,16 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
 
           {/* Tasks */}
           <div className="dashboard-card tasks-card">
-          <button 
-            className="sync-calendar-button" 
-            onClick={handleGoogleCalendarSignIn}
-          >
-            Sync with Google Calendar
-          </button>
-
-            <div className="card-header">
+          <div className="card-header">
               <h2>Tasks</h2>
               <span className="check-icon"></span>
-            </div>
+              <button 
+                className="sync-calendar-button" 
+                onClick={handleGoogleCalendarSignIn}
+              >
+                Sync with Google Calendar
+              </button>
+          </div>
             <div className="tasks-count">
               <h3>{tasks.length}</h3>
               <p>tasks</p>
@@ -525,7 +531,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
               <span className="plus-icon">+</span> Add Task
             </button>
             <div className="tasks-list">
-              {tasks.map(task => (
+              {paginatedTasks.map(task => (
                 <div 
                   key={task.taskId} 
                   className={`task-item ${task.completed ? 'completed' : ''}`}
@@ -570,6 +576,21 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
                 </div>
               ))}
             </div>
+            <div className="pagination-controls">
+            <button 
+              onClick={() => setCurrentTaskPage(p => Math.max(p - 1, 1))} 
+              disabled={currentTaskPage === 1}
+            >
+              Prev
+            </button>
+            <span>Page {currentTaskPage} of {totalTaskPages}</span>
+            <button 
+              onClick={() => setCurrentTaskPage(p => Math.min(p + 1, totalTaskPages))} 
+              disabled={currentTaskPage === totalTaskPages}
+            >
+              Next
+            </button>
+          </div>
           </div>
         </div>
 
