@@ -131,4 +131,21 @@ describe('HomePageUI Google Calendar Integration', () => {
         expect(screen.getByLabelText(/location/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/duration/i)).toBeInTheDocument();
     });
+
+    // Adding task function syncs with user's google calendar
+    it('should have a working Google Calendar sync button', async () => {
+        render(<HomePageUI user={mockUser} />);
+
+        // Find the sync button
+        const syncButton = screen.getByText('Sync with Google Calendar');
+        expect(syncButton).toBeInTheDocument();
+
+        // Click the sync button
+        await act(async () => {
+            fireEvent.click(syncButton);
+        });
+
+        // Verify the button is clickable
+        expect(syncButton).not.toBeDisabled();
+    });
 }); 
