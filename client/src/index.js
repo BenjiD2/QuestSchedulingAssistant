@@ -1,3 +1,6 @@
+// Main entry point for the client-side React application.
+// Renders the App component and sets up the Auth0Provider.
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

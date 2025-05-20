@@ -1,4 +1,5 @@
-// server/src/services/userService.js
+// Server-side service functions for user-related operations.
+// This file contains functions for interacting with the User model in the database.
 
 const User = require('../models/User');
 

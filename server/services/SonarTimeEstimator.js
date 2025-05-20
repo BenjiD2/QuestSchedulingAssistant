@@ -1,3 +1,6 @@
+// Service for interacting with the Sonar AI time estimation service.
+// Defines the SonarTimeEstimator class responsible for obtaining and processing time estimates for tasks.
+
 const axios = require('axios');
 
 class SonarTimeEstimator {

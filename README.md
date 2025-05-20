@@ -65,8 +65,8 @@ make test
 # Run only client tests
 make test-client
 
-# Run only server tests
-make test-server
+# Run only server tests (Includes unit and acceptance tests)
+cd server && npm test
 ```
 
 ### Test Files Structure
@@ -78,6 +78,8 @@ server/tests/unit/
 ├── taskOperations.test.js    # Tests for task CRUD operations
 ├── updateSchedule.test.js    # End-to-end tests for schedule updates
 └── sonarTimeEstimate.test.js # Unit tests for AI-powered time estimation
+server/tests/acceptance/
+├── acceptance.test.js        # Acceptance tests for core API endpoint behavior and validation
 
 client/src/__tests__/
 ├── GoogleCalendar.test.js    # Unit Tests for Google Calendar integration
@@ -85,11 +87,57 @@ client/src/__tests__/
 └── onboardingAuthenticationUI.test.js  # Unit tests for user onboarding and authentication
 ```
 
+## Test Output
+
+When you run the server tests using `cd server && npm test`, you will see output similar to this (specific test names and timings may vary):
+
+```
+> server@1.0.0 test
+> jest
+
+ PASS   server  tests/unit/eventsToTasks.test.js
+ PASS   server  tests/unit/task.test.js
+ PASS   server  tests/unit/taskOperations.test.js
+ PASS   server  tests/unit/storeData.test.js
+ PASS   server  tests/unit/taskManager.test.js
+ PASS   server  tests/unit/calendarService.test.js
+ PASS   server  tests/unit/sonarTimeEstimate.test.js
+ PASS   server  tests/unit/updateSchedule.test.js
+ PASS   server  tests/acceptance/acceptance.test.js
+
+---------------------------|---------|----------|---------|---------|---------------------------------------
+File                       | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+---------------------------|---------|----------|---------|---------|---------------------------------------
+All files                  |   XX.XX |    XX.XX |   XX.XX |   XX.XX |
+ [Detailed coverage information follows] 
+---------------------------|---------|----------|---------|---------|---------------------------------------
+Test Suites: X passed, X total
+Tests:       Y passed, Y total
+Snapshots:   Z total
+Time:        X.XXX s, estimated Y s
+Ran all test suites.
+```
+
+This output shows each test suite that was run, whether it passed (`PASS`) or failed (`FAIL`), and a summary at the end indicating the total number of test suites and tests, along with code coverage information.
+
+## Acceptance Test Details
+
+The acceptance tests located in `server/tests/acceptance/acceptance.test.js` verify key behaviors of the server API endpoints. These tests are designed to confirm that the application responds as expected to various requests, focusing on endpoint accessibility and input validation, independent of database persistence.
+
+Here are the specific scenarios covered by the current acceptance tests:
+
+*   **Root Endpoint Accessibility:** Verifies that the root endpoint (`/`) is accessible and returns a 200 status code with the expected welcome message (`Quest Scheduling Assistant API`). This confirms the basic functionality of the server being up and running.
+*   **User XP Update Endpoint Input Validation (`POST /api/users/xp`):** Tests that this endpoint correctly handles invalid input. It specifically checks that a 400 status code and an appropriate error message are returned when the `userId` is missing or invalid, or when `xpGained` is not a valid positive number. This demonstrates the server's input validation logic for this critical endpoint.
+*   **Calendar Events Endpoint Token Requirement (`GET /calendar/events`):** Confirms that attempting to access the calendar events endpoint without providing an access token results in a 400 status code and a specific error message indicating that the token is required. This verifies a necessary security/authentication check for this endpoint.
+*   **Time Estimation Endpoint Accessibility (`POST /api/estimate-time` - Placeholder):** This test checks for the basic accessibility of a time estimation endpoint. It verifies that a POST request to this endpoint receives a successful response (status code 200-399), indicating that the endpoint is reachable and generally functioning, although it does not validate the estimation logic itself. *Note: You may need to adjust the endpoint path in the test file (`server/tests/acceptance/acceptance.test.js`) to match your actual implementation of the time estimation endpoint.* This test demonstrates that the API route for time estimation is set up and responsive.
+
+These acceptance tests provide confidence that the core API endpoints are correctly defined, accessible, and perform basic input validation as expected, contributing to the overall reliability of the application's server-side functionality.
+
 ## Milestone 4A
 
-In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users’ schedules accordingly. 
+In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users' schedules accordingly. 
 
-In this second iteration, we’re focusing on improving usability by integrating the backend with the frontend and connecting to a database to store users’ account information. We will gamify task completion, implementing points and streaks to track users’ progress. In addition to account info, the database will store these points and streak information as well. Additionally, we will connect to a Large Language Model (Perplexity) API to compute estimates about task duration and improve the intelligence of our scheduling app.
+In this second iteration, we're focusing on improving usability by integrating the backend with the frontend and connecting to a database to store users' account information. We will gamify task completion, implementing points and streaks to track users' progress. In addition to account info, the database will store these points and streak information as well. Additionally, we will connect to a Large Language Model (Perplexity) API to compute estimates about task duration and improve the intelligence of our scheduling app.
 
 Iteration 2: Planned Implementations
 - Points System & Gamification

@@ -1,4 +1,8 @@
+// In-memory data store for users and tasks.
+// Provides functions for accessing and manipulating user and task data.
+
 const UserProgress = require('../models/UserProgress');
+const User = require('../models/User');
 
 // In-memory store for users and tasks
 const users = new Map();
@@ -9,15 +13,12 @@ const tasks = new Map();
 const getOrCreateUser = (auth0User) => {
   const userId = auth0User.sub;
   if (!users.has(userId)) {
-    users.set(userId, {
-      id: userId,
+    const newUser = new User({
+      userId,
       name: auth0User.name || 'Anonymous User',
-      email: auth0User.email,
-      xp: 0,
-      level: 1,
-      streak: 0,
-      achievements: []
+      email: auth0User.email
     });
+    users.set(userId, newUser);
   }
   return users.get(userId);
 };
@@ -30,10 +31,54 @@ const getOrCreateUserProgress = (userId) => {
   return userProgress.get(userId);
 };
 
+// Update user information
+const updateUser = (userId, updates) => {
+  // Decode the URL-encoded userId if necessary
+  const decodedUserId = decodeURIComponent(userId);
+  const user = users.get(decodedUserId);
+  
+  if (!user) {
+    // If user doesn't exist, create a new one
+    const newUser = new User({
+      userId: decodedUserId,
+      ...updates
+    });
+    users.set(decodedUserId, newUser);
+    return newUser;
+  }
+  
+  user.update(updates);
+  return user;
+};
+
+// Get user by ID
+const getUser = (userId) => {
+  // Decode the URL-encoded userId if necessary
+  const decodedUserId = decodeURIComponent(userId);
+  return users.get(decodedUserId);
+};
+
 // Update the XP update function
 const updateUserXP = (userId, xpGained) => {
   const progress = getOrCreateUserProgress(userId);
   const updatedProgress = progress.addXP(xpGained);
+  
+  // Update user with new XP and level
+  const user = users.get(userId);
+  if (user) {
+    user.update({
+      xp: updatedProgress.xp,
+      level: updatedProgress.level,
+      streak: updatedProgress.streak
+    });
+
+    // Add any new achievements to the user
+    if (updatedProgress.achievements?.length > 0) {
+      updatedProgress.achievements.forEach(achievement => {
+        user.addAchievement(achievement);
+      });
+    }
+  }
   
   // Save to store
   userProgress.set(userId, progress);
@@ -41,17 +86,34 @@ const updateUserXP = (userId, xpGained) => {
   return updatedProgress;
 };
 
+const revertUserXP = (userId, xpLost) => {
+  const progress = getOrCreateUserProgress(userId);
+  const updatedProgress = progress.removeXP(xpLost); // call removeXP from UserProgress
+
+  // Update user with reverted XP and level
+  const user = users.get(userId);
+  if (user) {
+    user.update({
+      xp: updatedProgress.xp,
+      level: updatedProgress.level,
+      streak: updatedProgress.streak
+    });
+
+    // 🧹 Optionally remove matching achievements from the user model
+    const levelId = `level-${updatedProgress.level + 1}`; // previously removed level
+    user.achievements = user.achievements.filter(a => a.id !== levelId);
+  }
+
+  userProgress.set(userId, progress);
+
+  return updatedProgress;
+};
+
 // Helper to get all users sorted by XP
 const getLeaderboard = () => {
   return Array.from(users.values())
-    .sort((a, b) => b.xp - a.xp)
-    .map(user => ({
-      id: user.id,
-      name: user.name,
-      xp: user.xp,
-      level: user.level,
-      streak: user.streak
-    }));
+    .map(user => user.toJSON())
+    .sort((a, b) => b.xp - a.xp);
 };
 
 // Helper to calculate level from XP
@@ -64,14 +126,26 @@ const getProgressToNextLevel = (xp) => {
   return xp % 100;
 };
 
+// Get user achievements
+const getUserAchievements = (userId) => {
+  // Decode the URL-encoded userId if necessary
+  const decodedUserId = decodeURIComponent(userId);
+  const user = users.get(decodedUserId);
+  return user ? user.achievements : [];
+};
+
 module.exports = {
   users,
   tasks,
   userProgress,
   getOrCreateUser,
+  getUser,
+  updateUser,
   getLeaderboard,
   getOrCreateUserProgress,
   updateUserXP,
+  revertUserXP,
   calculateLevel,
-  getProgressToNextLevel
+  getProgressToNextLevel,
+  getUserAchievements
 }; 

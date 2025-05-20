@@ -1,3 +1,6 @@
+// Jest setup file for the server test environment.
+// Configures the testing environment, mocks globals, and sets up before/after hooks.
+
 // Import testing-library extensions
 import '@testing-library/jest-dom';
 

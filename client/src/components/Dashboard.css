@@ -129,7 +129,13 @@
 .dashboard-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 32px; /* was 24px */
+  margin-bottom: 32px; 
+}
+
+.schedule-card,
+.tasks-card {
+  padding-top: 32px; 
 }
 
 /* Calendar and Gamification Row */
@@ -194,6 +200,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-top: 16px;
 }
 
 .event-item {
@@ -276,6 +283,7 @@
 .tasks-card {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
 .tasks-count {
@@ -322,6 +330,9 @@
 .tasks-list {
   display: grid;
   gap: 16px;
+  margin-top: 16px; 
+  max-height: 350px;
+  overflow-y: auto;
 }
 
 .task-item {
@@ -432,6 +443,35 @@
 .calendar {
   padding: 16px 0;
 }
+
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.pagination-controls button {
+  padding: 6px 12px;
+  border: none;
+  background-color: var(--light-blue);
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pagination-controls button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination-controls span {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 
 .calendar-nav {
   display: flex;
@@ -551,6 +591,7 @@
   padding: 6px 16px;
   font-size: 14px;
   font-weight: 600;
+  margin-bottom: 8px;
 }
 
 .quest-progress {
@@ -560,7 +601,7 @@
 .progress-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
   font-size: 14px;
   color: var(--text-secondary);
 }
@@ -581,6 +622,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 12px; 
 }
 
 .achievement-item {
@@ -940,4 +982,45 @@
 
 .sync-calendar-button:hover {
   background-color: var(--orange);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0.5rem;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.close-button:hover {
+  color: #333;
 }

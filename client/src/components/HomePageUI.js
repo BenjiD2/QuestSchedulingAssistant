@@ -5,6 +5,7 @@ import TaskForm from './TaskForm';
 import Profile from './Profile';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import EditAccount from './EditAccount';
 
 import { gapi } from "gapi-script";
 import convertEventToTask from '../utils/convertEventToTask';
@@ -16,15 +17,24 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [activeTab, setActiveTab] = useState('tasks');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showEditAccount, setShowEditAccount] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [questProgress, setQuestProgress] = useState(0);
   const [currentLevel, setCurrentLevel] = useState(1);
   const [streak, setStreak] = useState(0);
   const [achievements, setAchievements] = useState([]);
+  const [userData, setUserData] = useState(user);
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const TASKS_PER_PAGE = 3;
+  const [currentTaskPage, setCurrentTaskPage] = useState(1);
+  const totalTaskPages = Math.ceil(tasks.length / TASKS_PER_PAGE);
+  const paginatedTasks = tasks.slice(
+    (currentTaskPage - 1) * TASKS_PER_PAGE,
+    currentTaskPage * TASKS_PER_PAGE
+  );
 
   function getStartOfWeekISO() {
     const now = new Date();
@@ -130,15 +140,54 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
 
   };
 
-  const handleEditTask = (taskData) => {
-    setTasks(tasks.map(task => 
-      task.taskId === editingTask.taskId ? { ...task, ...taskData } : task
+  const handleEditTask = async (taskData) => {
+    const updatedTask = { ...editingTask, ...taskData };
+
+    try {
+      if (isSignedIn && updatedTask.googleEventId) {
+        await gapi.client.calendar.events.update({
+          calendarId: "primary",
+          eventId: updatedTask.googleEventId,
+          resource: {
+            summary: updatedTask.title,
+            description: updatedTask.description,
+            location: updatedTask.location,
+            start: {
+              dateTime: new Date(updatedTask.startTime).toISOString(),
+              timeZone: "UTC",
+            },
+            end: {
+              dateTime: new Date(updatedTask.endTime).toISOString(),
+              timeZone: "UTC",
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to update Google Calendar event:", err);
+    }
+
+    setTasks(tasks.map(task =>
+      task.taskId === editingTask.taskId ? updatedTask : task
     ));
     setEditingTask(null);
     setShowTaskForm(false);
   };
 
-  const handleDeleteTask = (taskId) => {
+  const handleDeleteTask = async (taskId) => {
+    const taskToDelete = tasks.find(t => t.taskId === taskId);
+  
+    try {
+      if (isSignedIn && taskToDelete?.googleEventId) {
+        await gapi.client.calendar.events.delete({
+          calendarId: "primary",
+          eventId: taskToDelete.googleEventId
+        });
+      }
+    } catch (err) {
+      console.error("Failed to delete Google Calendar event:", err);
+    }
+
     setTasks(tasks.filter(task => task.taskId !== taskId));
   };
 
@@ -217,6 +266,42 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     }
   };
 
+  const handleToggleComplete = async (taskId) => {
+    const task = tasks.find(t => t.taskId === taskId);
+    if (!task) return;
+
+    const xpGained = calculateTaskXP(task);
+    const isReverting = task.completed;
+
+    try {
+      const response = await fetch('http://localhost:8080/api/users/xp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.sub,
+          xpGained: xpGained,
+          revert: isReverting 
+        })
+      });
+
+      const progressData = await response.json();
+      if (!response.ok) throw new Error(progressData.error || 'XP update failed');
+
+      // Update XP UI
+      setQuestProgress(progressData.progress);
+      setCurrentLevel(progressData.level);
+      setStreak(progressData.streak);
+      setAchievements(prev => [...progressData.achievements, ...prev].slice(0, 3));
+
+      // Update task state
+      setTasks(tasks.map(t =>
+        t.taskId === taskId ? { ...t, completed: !isReverting } : t
+      ));
+    } catch (err) {
+      console.error("Failed to update XP:", err);
+    }
+  };
+
   const calculateTaskXP = (task) => {
     // Base XP: 10 points per 30 minutes
     const baseXP = (task.duration / 30) * 10;
@@ -254,7 +339,12 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   };
 
   const handleEditAccount = () => {
-    window.open('https://manage.auth0.com/manage-users', '_blank');
+    setShowEditAccount(true);
+    setShowProfileMenu(false);
+  };
+
+  const handleUpdateUser = (updatedUser) => {
+    setUserData(updatedUser);
   };
 
   // Sample data
@@ -368,14 +458,14 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           >
             <div className="avatar">
-              {user ? user.name.substring(0, 2).toUpperCase() : 'JD'}
+              {userData ? userData.name.substring(0, 2).toUpperCase() : 'JD'}
             </div>
             <div className="user-info">
               <div className="user-name">
-                {user ? user.name : 'John Doe'}
+                {userData ? userData.name : 'John Doe'}
               </div>
               <div className="user-role">
-                {user ? user.email : 'Product Manager'}
+                {userData ? userData.email : 'Product Manager'}
               </div>
             </div>
             <div style={profileMenuStyle}>
@@ -430,17 +520,16 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
 
           {/* Tasks */}
           <div className="dashboard-card tasks-card">
-          <button 
-            className="sync-calendar-button" 
-            onClick={handleGoogleCalendarSignIn}
-          >
-            Sync with Google Calendar
-          </button>
-
-            <div className="card-header">
+          <div className="card-header">
               <h2>Tasks</h2>
               <span className="check-icon"></span>
-            </div>
+              <button 
+                className="sync-calendar-button" 
+                onClick={handleGoogleCalendarSignIn}
+              >
+                Sync with Google Calendar
+              </button>
+          </div>
             <div className="tasks-count">
               <h3>{tasks.length}</h3>
               <p>tasks</p>
@@ -450,21 +539,21 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
               <span className="plus-icon">+</span> Add Task
             </button>
             <div className="tasks-list">
-              {tasks.map(task => (
+              {paginatedTasks.map(task => (
                 <div 
                   key={task.taskId} 
                   className={`task-item ${task.completed ? 'completed' : ''}`}
                 >
                   <div 
-                    className="task-checkbox"
-                    onClick={() => !task.completed && handleCompleteTask(task.taskId)}
-                  >
-                    {task.completed ? (
-                      <span className="checked">✓</span>
-                    ) : (
-                      <span className="unchecked"></span>
-                    )}
-                  </div>
+                  className="task-checkbox"
+                  onClick={() => handleToggleComplete(task.taskId)}
+                >
+                  {task.completed ? (
+                    <span className="checked">✓</span>
+                  ) : (
+                    <span className="unchecked"></span>
+                  )}
+                </div>
                   <div className="task-content">
                     <h3 className="task-title">{task.title}</h3>
                     <p className="task-description">{task.description}</p>
@@ -495,6 +584,21 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
                 </div>
               ))}
             </div>
+            <div className="pagination-controls">
+            <button 
+              onClick={() => setCurrentTaskPage(p => Math.max(p - 1, 1))} 
+              disabled={currentTaskPage === 1}
+            >
+              Prev
+            </button>
+            <span>Page {currentTaskPage} of {totalTaskPages}</span>
+            <button 
+              onClick={() => setCurrentTaskPage(p => Math.min(p + 1, totalTaskPages))} 
+              disabled={currentTaskPage === totalTaskPages}
+            >
+              Next
+            </button>
+          </div>
           </div>
         </div>
 
@@ -546,6 +650,24 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             </div>
         </div>
       </div>
+
+      {showEditAccount && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <EditAccount 
+              user={userData} 
+              onUpdateUser={handleUpdateUser}
+              onClose={() => setShowEditAccount(false)}
+            />
+            <button 
+              className="close-button"
+              onClick={() => setShowEditAccount(false)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {showTaskForm && (
         <TaskForm
