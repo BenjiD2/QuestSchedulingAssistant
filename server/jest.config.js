@@ -1,3 +1,6 @@
+// Jest configuration file for the server.
+// Configures how Jest runs tests in the server directory.
+
 module.exports = {
   projects: [
     {

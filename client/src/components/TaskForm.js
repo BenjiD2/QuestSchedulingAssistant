@@ -1,3 +1,6 @@
+// Component for adding or editing tasks.
+// Provides a form with fields for task details and includes AI time estimation functionality.
+
 import React, { useState, useEffect } from 'react';
 import './TaskForm.css';
 

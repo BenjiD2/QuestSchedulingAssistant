@@ -1,3 +1,6 @@
+// Component for editing user account information.
+// Allows users to update their profile and view achievements.
+
 import React, { useState, useEffect } from 'react';
 import './EditAccount.css';
 

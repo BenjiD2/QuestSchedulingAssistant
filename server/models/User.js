@@ -1,4 +1,5 @@
-// server/models/User.js
+// Defines the User class.
+// This class represents user data and includes methods for updating user properties, managing completed tasks and achievements.
 
 class User {
   constructor(userData) {

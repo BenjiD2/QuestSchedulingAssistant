@@ -1,4 +1,6 @@
-// acceptance.test.js
+// Server-side acceptance tests for API endpoints.
+// These tests use supertest to verify endpoint behavior, input validation, and responses.
+// They are designed to run without relying on database persistence.
 
 const request = require('supertest');
 const app = require('../../index'); // Assuming your server entry file is index.js in the server folder

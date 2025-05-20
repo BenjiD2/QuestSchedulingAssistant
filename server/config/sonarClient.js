@@ -1,3 +1,6 @@
+// Configuration for the Sonar AI client.
+// Sets up the API key and base URL for the Sonar service.
+
 const axios = require('axios');
 
 class SonarClient {

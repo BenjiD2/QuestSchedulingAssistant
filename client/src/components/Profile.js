@@ -1,3 +1,6 @@
+// Component for displaying user profile information.
+// Shows level, XP, streaks, achievements, and task statistics.
+
 import React from 'react';
 import './Profile.css';
 

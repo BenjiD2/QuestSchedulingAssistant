@@ -1,3 +1,5 @@
+// Utility functions for converting Google Calendar events to task objects.
+
 const convertEventToTask = (event) => {
   if (!event.start) {
     throw new Error('Event must have a start time');

@@ -1,3 +1,6 @@
+// Mock client for the Sonar AI time estimation service.
+// Provides a mock implementation of the chat completion functionality for testing purposes.
+
 // Mock sonarClient for testing
 const createChatCompletion = async (messages) => {
   // Mock response that simulates time estimation

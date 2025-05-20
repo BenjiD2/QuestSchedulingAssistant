@@ -1,3 +1,6 @@
+// Database configuration using Sequelize.
+// This file sets up the connection to the SQLite database.
+
 const { Sequelize } = require('sequelize');
 const path = require('path');
 

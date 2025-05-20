@@ -1,3 +1,6 @@
+// Google API configuration.
+// Contains credentials and settings for Google service integration.
+
 module.exports = {
   clientId: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,

@@ -1,3 +1,6 @@
+// Main application component.
+// Handles routing based on user authentication status.
+
 import React from 'react';
 import './App.css';
 import { HomePageUI } from './components/HomePageUI';

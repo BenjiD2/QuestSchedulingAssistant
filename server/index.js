@@ -1,4 +1,6 @@
-// server/index.js
+// Main server entry file.
+// Sets up the Express application, middleware, and defines core API endpoints.
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');

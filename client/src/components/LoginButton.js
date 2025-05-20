@@ -1,3 +1,6 @@
+// Component for the login button.
+// Initiates the Auth0 login process when clicked.
+
 import React from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 
