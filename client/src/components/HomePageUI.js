@@ -212,6 +212,42 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     }
   };
 
+  const handleToggleComplete = async (taskId) => {
+    const task = tasks.find(t => t.taskId === taskId);
+    if (!task) return;
+
+    const xpGained = calculateTaskXP(task);
+    const isReverting = task.completed;
+
+    try {
+      const response = await fetch('http://localhost:8080/api/users/xp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.sub,
+          xpGained: xpGained,
+          revert: isReverting 
+        })
+      });
+
+      const progressData = await response.json();
+      if (!response.ok) throw new Error(progressData.error || 'XP update failed');
+
+      // Update XP UI
+      setQuestProgress(progressData.progress);
+      setCurrentLevel(progressData.level);
+      setStreak(progressData.streak);
+      setAchievements(prev => [...progressData.achievements, ...prev].slice(0, 3));
+
+      // Update task state
+      setTasks(tasks.map(t =>
+        t.taskId === taskId ? { ...t, completed: !isReverting } : t
+      ));
+    } catch (err) {
+      console.error("Failed to update XP:", err);
+    }
+  };
+
   const calculateTaskXP = (task) => {
     // Base XP: 10 points per 30 minutes
     const baseXP = (task.duration / 30) * 10;
@@ -456,15 +492,15 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
                   className={`task-item ${task.completed ? 'completed' : ''}`}
                 >
                   <div 
-                    className="task-checkbox"
-                    onClick={() => !task.completed && handleCompleteTask(task.taskId)}
-                  >
-                    {task.completed ? (
-                      <span className="checked">✓</span>
-                    ) : (
-                      <span className="unchecked"></span>
-                    )}
-                  </div>
+                  className="task-checkbox"
+                  onClick={() => handleToggleComplete(task.taskId)}
+                >
+                  {task.completed ? (
+                    <span className="checked">✓</span>
+                  ) : (
+                    <span className="unchecked"></span>
+                  )}
+                </div>
                   <div className="task-content">
                     <h3 className="task-title">{task.title}</h3>
                     <p className="task-description">{task.description}</p>

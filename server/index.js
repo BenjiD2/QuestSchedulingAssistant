@@ -37,7 +37,7 @@ app.get('/', (req, res) => {
 app.post('/api/users/xp', async (req, res) => {
   try {
     console.log('Received XP update request:', req.body);
-    const { userId, xpGained } = req.body;
+    const { userId, xpGained, revert } = req.body;
     
     // Validate inputs
     if (!userId || typeof userId !== 'string') {
@@ -51,7 +51,9 @@ app.post('/api/users/xp', async (req, res) => {
     }
 
     // Update progress using the new system
-    const updatedProgress = store.updateUserXP(userId, xpGained);
+    const updatedProgress = revert
+      ? store.revertUserXP(userId, xpGained)
+      : store.updateUserXP(userId, xpGained);
     
     console.log('Updated progress:', updatedProgress);
     res.json(updatedProgress);
@@ -66,6 +68,20 @@ app.post('/api/users/xp', async (req, res) => {
     });
   }
 });
+
+app.post('/api/users/xp', (req, res) => {
+  const { userId, xpGained, revert } = req.body;
+
+  const progress = userMap.get(userId) || new UserProgress(userId);
+
+  const result = revert
+    ? progress.removeXP(xpGained) // ⬅️ new method
+    : progress.addXP(xpGained);
+
+  userMap.set(userId, progress);
+  res.json(result);
+});
+
 
 // Add routes
 app.use('/api', userRoutes);

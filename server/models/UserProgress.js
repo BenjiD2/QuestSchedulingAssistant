@@ -19,6 +19,30 @@ class UserProgress {
     return xp % 100;
   }
 
+  removeXP(xpLost) {
+    this.xp = Math.max(0, this.xp - xpLost);
+  
+    const oldLevel = this.level;
+    const newLevel = this.calculateLevel(this.xp);
+  
+    if (newLevel < oldLevel) {
+      this.achievements = this.achievements.filter(a => a.id !== `level-${oldLevel}`);
+    }
+  
+    this.recentAchievements = [];
+    this.lastActive = new Date();
+  
+    return {
+      xp: this.xp,
+      level: newLevel,
+      progress: this.calculateProgress(this.xp),
+      streak: this.streak,
+      achievements: [],
+      lastActive: this.lastActive,
+      lastStreakUpdate: this.lastStreakUpdate
+    };
+  }
+
   updateStreak() {
     const now = new Date();
     const lastActiveDate = new Date(this.lastActive);

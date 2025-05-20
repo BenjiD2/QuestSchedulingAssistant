@@ -83,6 +83,29 @@ const updateUserXP = (userId, xpGained) => {
   return updatedProgress;
 };
 
+const revertUserXP = (userId, xpLost) => {
+  const progress = getOrCreateUserProgress(userId);
+  const updatedProgress = progress.removeXP(xpLost); // call removeXP from UserProgress
+
+  // Update user with reverted XP and level
+  const user = users.get(userId);
+  if (user) {
+    user.update({
+      xp: updatedProgress.xp,
+      level: updatedProgress.level,
+      streak: updatedProgress.streak
+    });
+
+    // 🧹 Optionally remove matching achievements from the user model
+    const levelId = `level-${updatedProgress.level + 1}`; // previously removed level
+    user.achievements = user.achievements.filter(a => a.id !== levelId);
+  }
+
+  userProgress.set(userId, progress);
+
+  return updatedProgress;
+};
+
 // Helper to get all users sorted by XP
 const getLeaderboard = () => {
   return Array.from(users.values())
@@ -118,6 +141,7 @@ module.exports = {
   getLeaderboard,
   getOrCreateUserProgress,
   updateUserXP,
+  revertUserXP,
   calculateLevel,
   getProgressToNextLevel,
   getUserAchievements
