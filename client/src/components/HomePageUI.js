@@ -16,7 +16,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [questProgress, setQuestProgress] = useState(65);
+  const [questProgress, setQuestProgress] = useState(0);
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
   const [isSignedIn, setIsSignedIn] = useState(false);
