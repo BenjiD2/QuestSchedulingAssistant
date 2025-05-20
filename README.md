@@ -55,6 +55,7 @@ REACT_APP_AUTH0_DOMAIN=your_auth0_domain
 REACT_APP_AUTH0_CLIENT_ID=your_auth0_client_id
 REACT_APP_AUTH0_CALLBACK_URL=http://localhost:3000/callback
 REACT_APP_API_URL=http://localhost:8080
+PORT=3000
 ```
 
 ### Running Tests

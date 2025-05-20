@@ -96,7 +96,7 @@ class UserProgress {
           date: new Date()
         };
         this.achievements.push(achievement);
-        this.recentAchievements.push(achievement); // ✅ NEW
+        this.recentAchievements.push(achievement); 
       }
     }
   
@@ -108,7 +108,7 @@ class UserProgress {
       level: newLevel,
       progress: this.calculateProgress(this.xp),
       streak: this.streak,
-      achievements: this.recentAchievements, // ✅ Only return new ones
+      achievements: this.recentAchievements,
       lastActive: this.lastActive,
       lastStreakUpdate: this.lastStreakUpdate
     };
@@ -126,7 +126,7 @@ class UserProgress {
           date: new Date()
         };
         this.achievements.push(achievement);
-        this.recentAchievements.push(achievement); // ✅ NEW
+        this.recentAchievements.push(achievement); 
       }
     }
   }  
