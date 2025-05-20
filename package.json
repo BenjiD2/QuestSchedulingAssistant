@@ -1,34 +1,33 @@
 {
-  "name": "questschedulingassistant",
+  "name": "quest-scheduling-assistant",
   "version": "1.0.0",
-  "description": "Quest Scheduling Assistant - A productivity app",
+  "description": "A simple task scheduling app with gamification elements.",
   "main": "index.js",
   "scripts": {
-    "test": "make test",
-    "test:client": "cd client && npm test",
-    "test:server": "cd server && npm test",
-    "start": "cd client && npm start",
-    "client": "cd client && npm start",
-    "install-client": "cd client && npm install"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm start --prefix client\"",
+    "heroku-postbuild": "cd client && npm install && npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BenjiD2/QuestSchedulingAssistant.git"
+    "url": "git+https://github.com/AlbertoChiapparoli/QuestSchedulingAssistant.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/BenjiD2/QuestSchedulingAssistant/issues"
+    "url": "https://github.com/AlbertoChiapparoli/QuestSchedulingAssistant/issues"
   },
-  "homepage": "https://github.com/BenjiD2/QuestSchedulingAssistant#readme",
+  "homepage": "https://github.com/AlbertoChiapparoli/QuestSchedulingAssistant#readme",
   "devDependencies": {
     "@babel/core": "^7.27.1",
     "@babel/plugin-transform-runtime": "^7.27.1",
     "@babel/preset-env": "^7.27.1",
     "@babel/preset-react": "^7.27.1",
     "babel-jest": "^29.7.0",
+    "concurrently": "^8.2.2",
     "identity-obj-proxy": "^3.0.0",
     "jest-environment-jsdom": "^29.7.0"
   },

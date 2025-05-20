@@ -20,7 +20,8 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "google-auth-library": "^9.15.1",
-    "googleapis": "^148.0.0"
+    "googleapis": "^148.0.0",
+    "mongoose": "^8.15.0"
   },
   "devDependencies": {
     "@babel/core": "^7.23.9",
@@ -35,6 +36,7 @@
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "nodemon": "^3.1.10",
     "pure-rand": "^6.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

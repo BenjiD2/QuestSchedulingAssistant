@@ -23,6 +23,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [questProgress, setQuestProgress] = useState(0);
   const [currentLevel, setCurrentLevel] = useState(1);
   const [streak, setStreak] = useState(0);
+  const [dayStreakCount, setDayStreakCount] = useState(0);
   const [achievements, setAchievements] = useState([]);
   const [userData, setUserData] = useState(user);
   const profileMenuRef                   = useRef(null);
@@ -35,6 +36,114 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     (currentTaskPage - 1) * TASKS_PER_PAGE,
     currentTaskPage * TASKS_PER_PAGE
   );
+
+  useEffect(() => {
+    const fetchMongoDBUserData = async () => {
+      if (!user || !user.userId) { 
+        console.log('👤 Synced user data not available yet for HomePageUI fetch.');
+        return;
+      }
+      
+      try {
+        console.log(`📊 HomePageUI: Attempting to re-fetch/verify user data for user ID: ${user.userId}`);
+        
+        const response = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(user.userId)}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.log(`❌ HomePageUI: Failed to fetch user data (${response.status}):`, errorText);
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('✅ HomePageUI: Successfully fetched user data:', data);
+        
+        if (data) {
+          setQuestProgress(data.xp % 100); 
+          setCurrentLevel(data.level || 1);
+          setStreak(data.streak || 0);
+          setDayStreakCount(data.dayStreak || 0);
+          setUserData(data);
+          
+          if (data.achievements) {
+            console.log('✅ HomePageUI: Using achievements from fetched user data:', data.achievements);
+            setAchievements(data.achievements);
+          } else {
+            console.log(`🏅 HomePageUI: Attempting to fetch achievements separately for user ID: ${user.userId}`);
+            const achievementsResponse = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(user.userId)}/achievements`);
+            if (achievementsResponse.ok) {
+              const achievementsData = await achievementsResponse.json();
+              console.log('✅ HomePageUI: Successfully fetched separate achievements:', achievementsData);
+              setAchievements(achievementsData);
+            } else {
+              const achievementsErrorText = await achievementsResponse.text();
+              console.log(`❌ HomePageUI: Failed to fetch separate achievements (${achievementsResponse.status}):`, achievementsErrorText);
+              setAchievements([]);
+            }
+          }
+        } else {
+          setQuestProgress(0);
+          setCurrentLevel(1);
+          setStreak(0);
+          setDayStreakCount(0);
+          setAchievements([]);
+        }
+      } catch (error) {
+        console.error('❌ HomePageUI: Network or parsing error fetching user data:', error);
+      }
+    };
+    
+    if (user && user.userId) {
+        fetchMongoDBUserData();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchMongoDBTasks = async () => {
+      if (!user || !user.userId) { 
+        console.log('👤 Synced user data not available yet for task fetch in HomePageUI.');
+        return;
+      }
+      
+      try {
+        console.log(`📊 HomePageUI: Attempting to fetch tasks for user ID: ${user.userId}`);
+        const response = await fetch('http://localhost:8080/api/tasks');
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.log(`❌ HomePageUI: Failed to fetch tasks (${response.status}):`, errorText);
+          return;
+        }
+        
+        const allTasks = await response.json();
+        console.log('✅ HomePageUI: Successfully fetched all tasks from MongoDB:', allTasks);
+        
+        if (allTasks && allTasks.length > 0) {
+          const userSpecificTasks = allTasks.filter(task => task.userId === user.userId);
+          console.log(`Found ${userSpecificTasks.length} tasks for current user (${user.userId}) out of ${allTasks.length} total.`);
+          
+          if (userSpecificTasks.length > 0) {
+            setTasks(userSpecificTasks);
+          } else {
+            setTasks([]);
+            console.log('No tasks found for the current user in MongoDB data.');
+          }
+        } else if (propTasks && propTasks.length > 0) {
+           console.log('Using tasks from props.'); 
+           setTasks(propTasks.filter(task => task.userId === user.userId));
+        }else {
+          setTasks([]);
+          console.log('No tasks from MongoDB or props to display for this user.');
+        }
+      } catch (error) {
+        console.error('❌ HomePageUI: Network or parsing error fetching tasks:', error);
+      }
+    };
+    
+    if (user && user.userId) {
+        fetchMongoDBTasks();
+    }
+  }, [user, propTasks]);
 
   function getStartOfWeekISO() {
     const now = new Date();
@@ -56,12 +165,6 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [profileMenuRef]);
-
-  useEffect(() => {
-    if (Array.isArray(propTasks)) {
-      setTasks(propTasks);
-    }
-  }, [propTasks]);
 
   const handleGoogleCalendarSignIn = () => {
     gapi.load("client:auth2", () => {
@@ -88,8 +191,38 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         })
         .then((response) => {
           const events = response.result.items;
-          const calendarTasks = events.map(convertEventToTask);
-          setTasks((prev) => [...prev, ...calendarTasks]);
+          const currentUser = user; // Capture user from the outer scope
+
+          if (!currentUser || !currentUser.userId) {
+            console.error('❌ Cannot import Google Calendar tasks: User ID is not available.');
+            toast.error('Could not import Google Calendar tasks: User information missing.');
+            return;
+          }
+
+          console.log(`🔄 Importing ${events.length} Google Calendar events as tasks for user ${currentUser.userId}...`);
+          const importPromises = events.map(event => {
+            const taskData = convertEventToTask(event); // This already creates most fields
+            // Ensure userId is added before sending to handleAddTask
+            const taskWithUser = {
+              ...taskData,
+              userId: currentUser.userId,
+              // handleAddTask will set completed: false by default
+            };
+            // Use handleAddTask to save each task to the backend
+            // handleAddTask already updates local state and shows toasts
+            return handleAddTask(taskWithUser, true); // Pass a flag to indicate it's a calendar import if needed for different behavior
+          });
+
+          Promise.all(importPromises)
+            .then(() => {
+              console.log('✅ All Google Calendar tasks processed for import.');
+              toast.success(`${events.length} tasks imported from Google Calendar!`);
+              // Tasks are added to local state by handleAddTask, so no explicit setTasks here is needed if handleAddTask does that.
+            })
+            .catch(importError => {
+              console.error('❌ Error during batch import of Google Calendar tasks:', importError);
+              toast.error('Some tasks may not have been imported correctly from Google Calendar.');
+            });
         })
         .catch((err) => {
           console.error("Error during Google Calendar integration:", err);
@@ -118,187 +251,295 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
     });
   };
 
-  const handleAddTask = async (taskData) => {
-    const newTask = {
-      taskId: crypto.randomUUID(),
+  const handleAddTask = async (taskData, isCalendarImport = false) => {
+    const newTaskPayload = {
+      // taskId is generated by backend or createTask in mongoStore if not present
       ...taskData,
-      completed: false
+      userId: taskData.userId || user.userId, // Ensure userId is included, prefer one from taskData if it exists (e.g. from calendar import)
+      completed: typeof taskData.completed === 'boolean' ? taskData.completed : false // Default to false if not specified
     };
 
-    try {
-      if (isSignedIn) {
-        console.log("trying to add a task");
-        const res = await addTaskToGoogleCalendar(newTask);
-        newTask.googleEventId = res.result.id;
+    if (!isCalendarImport) { // Only log non-calendar imports this way to avoid spam for batch imports
+      console.log('➕ Attempting to add new task (client-side):', newTaskPayload);
+    }
+
+    let googleEventId = newTaskPayload.googleEventId || null;
+    // For non-calendar imports that might need to be added to Google Calendar
+    if (!isCalendarImport && isSignedIn && !googleEventId && newTaskPayload.startTime && newTaskPayload.endTime) {
+      try {
+        console.log("Attempting to add new task to Google Calendar (non-import)");
+        const res = await addTaskToGoogleCalendar(newTaskPayload);
+        googleEventId = res.result.id;
+        newTaskPayload.googleEventId = googleEventId;
+        console.log('📅 Task added to Google Calendar, event ID:', googleEventId);
+      } catch (error) {
+        console.error("❌ Failed to add event to Google Calendar:", error);
+        toast.error("Failed to add task to Google Calendar.");
+        // Decide if you want to proceed without calendar sync or stop
       }
-    } catch (error) {
-      console.error("Failed to add event to Google Calendar:", error);
+    } else if (isCalendarImport && googleEventId) {
+      // Task from calendar already has googleEventId, no need to re-add
+      console.log(`ℹ️ Task from Google Calendar import, already has googleEventId: ${googleEventId}`);
     }
 
-    setTasks([...tasks, newTask]);
-    setShowTaskForm(false);
-
-  };
-
-  const handleEditTask = async (taskData) => {
-    const updatedTask = { ...editingTask, ...taskData };
-
     try {
-      if (isSignedIn && updatedTask.googleEventId) {
-        await gapi.client.calendar.events.update({
-          calendarId: "primary",
-          eventId: updatedTask.googleEventId,
-          resource: {
-            summary: updatedTask.title,
-            description: updatedTask.description,
-            location: updatedTask.location,
-            start: {
-              dateTime: new Date(updatedTask.startTime).toISOString(),
-              timeZone: "UTC",
-            },
-            end: {
-              dateTime: new Date(updatedTask.endTime).toISOString(),
-              timeZone: "UTC",
-            }
-          }
-        });
+      if (!isCalendarImport) { // Avoid spam for batch imports
+        console.log('➡️ Submitting new task to backend (/api/tasks):', newTaskPayload);
       }
-    } catch (err) {
-      console.error("Failed to update Google Calendar event:", err);
-    }
-
-    setTasks(tasks.map(task =>
-      task.taskId === editingTask.taskId ? updatedTask : task
-    ));
-    setEditingTask(null);
-    setShowTaskForm(false);
-  };
-
-  const handleDeleteTask = async (taskId) => {
-    const taskToDelete = tasks.find(t => t.taskId === taskId);
-  
-    try {
-      if (isSignedIn && taskToDelete?.googleEventId) {
-        await gapi.client.calendar.events.delete({
-          calendarId: "primary",
-          eventId: taskToDelete.googleEventId
-        });
-      }
-    } catch (err) {
-      console.error("Failed to delete Google Calendar event:", err);
-    }
-
-    setTasks(tasks.filter(task => task.taskId !== taskId));
-  };
-
-  const handleCompleteTask = async (taskId) => {
-    const task = tasks.find(t => t.taskId === taskId);
-    if (!task) {
-      console.log('Task not found:', taskId);
-      return;
-    }
-
-    try {
-      console.log('Current user:', user);
-      console.log('Task being completed:', task);
-
-      // Calculate XP for the task using the local function
-      const xpGained = Math.round((task.duration / 30) * 10 * (
-        task.category === 'work' ? 1.5 :
-        task.category === 'study' ? 1.3 :
-        task.category === 'exercise' ? 1.4 : 1.0
-      ));
-
-      console.log('Calculated XP gain:', xpGained);
-      console.log('Making request with userId:', user.sub);
-
-      const requestData = {
-        userId: user.sub,
-        xpGained: xpGained
-      };
-      console.log('Sending request data:', requestData);
-
-      const response = await fetch('http://localhost:8080/api/users/xp', {
+      const backendResponse = await fetch('http://localhost:8080/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(newTaskPayload),
       });
 
-      const progressData = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(progressData.error || 'Failed to update XP');
+      if (!backendResponse.ok) {
+        const errorData = await backendResponse.json();
+        console.error('❌ Backend task creation failed:', backendResponse.status, errorData);
+        toast.error(`Failed to save task: ${errorData.error || 'Unknown error'}`);
+        return;
       }
 
-      // Update all progress-related state
-      setQuestProgress(progressData.progress);
-      setCurrentLevel(progressData.level);
-      setStreak(progressData.streak);
-      
-      // Update achievements if there are new ones
-      if (progressData.achievements?.length > 0) {
-        // Update the visible recent achievements panel
-        setAchievements(prev => [...progressData.achievements, ...prev].slice(0, 3));
-      
-        // 🔥 Show toasts for just-earned achievements
-        progressData.achievements.forEach((a) => {
-          toast(`🎉 ${a.name}: ${a.description}`);
-        });
-      }
+      const savedTask = await backendResponse.json();
+      console.log('✅ Task saved to backend successfully:', savedTask);
+      toast.success(`Task "${savedTask.title}" added!`);
 
-      // Update task completion
-      setTasks(tasks.map(t => 
-        t.taskId === taskId ? { ...t, completed: true } : t
-      ));
-      
+      setTasks(prevTasks => [...prevTasks, savedTask]);
+      setShowTaskForm(false);
+      setEditingTask(null);
+
     } catch (error) {
-      console.error('Error updating XP:', error);
-      console.error('Error stack:', error.stack);
-      // Revert task completion if XP update failed
-      setTasks(tasks.map(t => {
-        if (t.taskId === taskId) {
-          return { ...t, completed: false };
-        }
-        return t;
-      }));
+      console.error('❌ Error submitting task to backend:', error);
+      toast.error('An error occurred while saving the task.');
     }
   };
 
-  const handleToggleComplete = async (taskId) => {
-    const task = tasks.find(t => t.taskId === taskId);
-    if (!task) return;
+  const handleEditTask = async (taskData) => {
+    if (!editingTask || !editingTask.taskId) {
+      console.error('❌ Cannot edit task: editingTask or editingTask.taskId is not defined.');
+      toast.error('Error: No task selected for editing.');
+      return;
+    }
 
-    const xpGained = calculateTaskXP(task);
-    const isReverting = task.completed;
+    const updatedTaskPayload = { 
+      ...editingTask, 
+      ...taskData,
+      userId: editingTask.userId || user.userId
+    };
+    console.log(`✏️ Attempting to edit task (client-side) ID: ${editingTask.taskId}`, updatedTaskPayload);
 
     try {
-      const response = await fetch('http://localhost:8080/api/users/xp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.sub,
-          xpGained: xpGained,
-          revert: isReverting 
-        })
+      if (isSignedIn && updatedTaskPayload.googleEventId) {
+        console.log(`📅 Updating Google Calendar event ID: ${updatedTaskPayload.googleEventId}`);
+        await gapi.client.calendar.events.update({
+          calendarId: "primary",
+          eventId: updatedTaskPayload.googleEventId,
+          resource: {
+            summary: updatedTaskPayload.title,
+            description: updatedTaskPayload.description,
+            location: updatedTaskPayload.location,
+            start: {
+              dateTime: new Date(updatedTaskPayload.startTime).toISOString(),
+              timeZone: "UTC",
+            },
+            end: {
+              dateTime: new Date(updatedTaskPayload.endTime).toISOString(),
+              timeZone: "UTC",
+            },
+          },
+        });
+        console.log('📅 Google Calendar event updated successfully.');
+      } else if (isSignedIn && !updatedTaskPayload.googleEventId && taskData.startTime && taskData.endTime) {
+        console.log('📅 Task was not on Google Calendar, attempting to add it now.');
+        const res = await addTaskToGoogleCalendar(updatedTaskPayload);
+        updatedTaskPayload.googleEventId = res.result.id;
+        console.log('📅 Task added to Google Calendar during edit, event ID:', updatedTaskPayload.googleEventId);
+      }
+    } catch (error) {
+      console.error("❌ Failed to update/add event to Google Calendar:", error);
+      toast.error("Failed to update task on Google Calendar.");
+    }
+    
+    try {
+      console.log(`➡️ Submitting updated task to backend (/api/tasks/${editingTask.taskId}):`, updatedTaskPayload);
+      const backendResponse = await fetch(`http://localhost:8080/api/tasks/${editingTask.taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTaskPayload),
       });
 
-      const progressData = await response.json();
-      if (!response.ok) throw new Error(progressData.error || 'XP update failed');
+      if (!backendResponse.ok) {
+        const errorData = await backendResponse.json();
+        console.error('❌ Backend task update failed:', backendResponse.status, errorData);
+        toast.error(`Failed to update task: ${errorData.error || 'Unknown error'}`);
+        return; 
+      }
 
-      // Update XP UI
-      setQuestProgress(progressData.progress);
-      setCurrentLevel(progressData.level);
-      setStreak(progressData.streak);
-      setAchievements(prev => [...progressData.achievements, ...prev].slice(0, 3));
+      const savedUpdatedTask = await backendResponse.json();
+      console.log('✅ Task updated in backend successfully:', savedUpdatedTask);
+      toast.success(`Task "${savedUpdatedTask.title}" updated!`);
+      
+      setTasks(tasks.map(t => t.taskId === savedUpdatedTask.taskId ? savedUpdatedTask : t));
+      setShowTaskForm(false);
+      setEditingTask(null);
 
-      // Update task state
-      setTasks(tasks.map(t =>
-        t.taskId === taskId ? { ...t, completed: !isReverting } : t
-      ));
+    } catch (error) {
+      console.error('❌ Error submitting task update to backend:', error);
+      toast.error('An error occurred while updating the task.');
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    const taskToDelete = tasks.find(t => t.taskId === taskId);
+    if (!taskToDelete) {
+      console.error('❌ handleDeleteTask: Task not found with ID:', taskId);
+      toast.error('Error: Task to delete not found.');
+      return;
+    }
+    console.log(`🗑️ Attempting to delete task (client-side) ID: ${taskId}, Name: "${taskToDelete.title}"`);
+
+    // Google Calendar Integration (existing logic)
+    try {
+      if (isSignedIn && taskToDelete.googleEventId) {
+        console.log(`📅 Deleting Google Calendar event ID: ${taskToDelete.googleEventId}`);
+        await gapi.client.calendar.events.delete({
+          calendarId: "primary",
+          eventId: taskToDelete.googleEventId
+        });
+        console.log('📅 Google Calendar event deleted successfully.');
+      }
     } catch (err) {
-      console.error("Failed to update XP:", err);
+      console.error("❌ Failed to delete Google Calendar event:", err);
+      toast.warn("Failed to delete task from Google Calendar, but proceeding with backend deletion.");
+    }
+
+    // Backend Integration
+    try {
+      console.log(`➡️ Submitting delete request to backend (/api/tasks/${taskId})`);
+      const backendResponse = await fetch(`http://localhost:8080/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          // 'Authorization': `Bearer ${await getAccessTokenSilently()}`,
+        },
+      });
+
+      if (!backendResponse.ok) {
+        // Status 204 means success but no content, so also check for that
+        if (backendResponse.status === 204) {
+          console.log('✅ Task deleted from backend successfully (204 No Content).');
+          toast.success(`Task "${taskToDelete.title}" deleted!`);
+          setTasks(tasks.filter(task => task.taskId !== taskId));
+        } else {
+          const errorData = await backendResponse.json().catch(() => ({ error: 'Failed to parse error response' }));
+          console.error('❌ Backend task deletion failed:', backendResponse.status, errorData);
+          toast.error(`Failed to delete task: ${errorData.error || 'Unknown error'}`);
+        }
+        return; // Stop if backend delete fails or handled by 204
+      }
+      
+      // For 200 OK with potential JSON body (though DELETE often returns 204)
+      console.log('✅ Task deleted from backend successfully:', await backendResponse.json().catch(() => ({}))); 
+      toast.success(`Task "${taskToDelete.title}" deleted!`);
+      setTasks(tasks.filter(task => task.taskId !== taskId));
+
+    } catch (error) {
+      console.error('❌ Error submitting task deletion to backend:', error);
+      toast.error('An error occurred while deleting the task.');
+    }
+  };
+
+  const handleCompleteTask = async (taskId) => {
+    console.warn('DEPRECATED: handleCompleteTask called. Use handleToggleComplete instead.');
+    await handleToggleComplete(taskId, true); // Force completion
+  };
+
+  const handleToggleComplete = async (taskId, forceComplete = null) => {
+    const task = tasks.find(t => t.taskId === taskId);
+    if (!task) {
+      console.error('❌ handleToggleComplete: Task not found with ID:', taskId);
+      toast.error('Error: Task not found to toggle completion.');
+      return;
+    }
+
+    const isCompleting = forceComplete !== null ? forceComplete : !task.completed;
+    const action = isCompleting ? 'Completing' : 'Uncompleting';
+
+    console.log(`🔄 Attempting to ${action} task (client-side) ID: ${taskId}, Name: "${task.title}"`);
+
+    const updatePayload = { completed: isCompleting };
+
+    // Backend Integration for toggling completion
+    try {
+      console.log(`➡️ Submitting task completion update to backend (/api/tasks/${taskId}):`, updatePayload);
+      const backendResponse = await fetch(`http://localhost:8080/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Authorization': `Bearer ${await getAccessTokenSilently()}`,
+        },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (!backendResponse.ok) {
+        const errorData = await backendResponse.json().catch(() => ({ error: 'Failed to parse error response' }));
+        console.error(`❌ Backend task ${action.toLowerCase()} failed:`, backendResponse.status, errorData);
+        toast.error(`Failed to ${action.toLowerCase()} task: ${errorData.error || 'Unknown error'}`);
+        return;
+      }
+
+      const updatedTaskFromBackend = await backendResponse.json();
+      console.log(`✅ Task ${action.toLowerCase()} in backend successfully:`, updatedTaskFromBackend);
+      toast.success(`Task "${updatedTaskFromBackend.title}" ${isCompleting ? 'completed' : 'marked incomplete'}!`);
+      
+      // Update local tasks state with the task from backend
+      setTasks(prevTasks => prevTasks.map(t => t.taskId === taskId ? updatedTaskFromBackend : t));
+
+      // IMPORTANT: XP and Level are now handled by the backend within mongoStore.updateTask.
+      // The response from the PUT /api/tasks/:id for completion should ideally give us enough info,
+      // or we trigger a user data refresh.
+      // For now, let's assume the updatedTaskFromBackend might contain relevant XP hints if designed so,
+      // or we can re-fetch user data to update XP/level display.
+      
+      // If the backend `updateTask` in `mongoStore` also returns updated user progress or similar,
+      // you could use that here to update questProgress, currentLevel, streak, achievements.
+      // For example, if `updatedTaskFromBackend.userProgress` existed:
+      // if (updatedTaskFromBackend.userProgress) {
+      //   setQuestProgress(updatedTaskFromBackend.userProgress.xp % 100);
+      //   setCurrentLevel(updatedTaskFromBackend.userProgress.level || 1);
+      //   setStreak(updatedTaskFromBackend.userProgress.streak || 0);
+      //   // Handle achievements update from userProgress if necessary
+      //   console.log('🏅 User progress updated from task completion:', updatedTaskFromBackend.userProgress);
+      // }
+      // As a simpler alternative for now, re-fetch user data after successful completion/uncompletion:
+      if (user && user.userId) {
+        console.log('🔄 Re-fetching user data after task completion toggle to update XP/Level/Achievements...');
+        // Re-use the existing fetchMongoDBUserData logic
+        const userResponse = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(user.userId)}`);
+        if (userResponse.ok) {
+            const updatedUserData = await userResponse.json();
+            if (updatedUserData) {
+                setQuestProgress(updatedUserData.xp % 100);
+                setCurrentLevel(updatedUserData.level || 1);
+                setStreak(updatedUserData.streak || 0);
+                setDayStreakCount(updatedUserData.dayStreak || 0);
+                // Fetch and set achievements again as they might have changed
+                const achievementsResponse = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(user.userId)}/achievements`);
+                if (achievementsResponse.ok) {
+                    setAchievements(await achievementsResponse.json());
+                }
+                 console.log('✅ User data (XP, Level, Achievements) refreshed after task toggle.');
+            }
+        } else {
+            console.error('❌ Failed to re-fetch user data after task toggle.');
+        }
+      }
+
+    } catch (error) {
+      console.error(`❌ Error submitting task ${action.toLowerCase()} to backend:`, error);
+      toast.error(`An error occurred while ${action.toLowerCase()} the task.`);
     }
   };
 
@@ -677,6 +918,17 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             setShowTaskForm(false);
             setEditingTask(null);
           }}
+        />
+      )}
+
+      {activeTab === 'profile' && (
+        <Profile 
+          user={userData} 
+          onClose={() => setActiveTab('tasks')} 
+          currentLevel={currentLevel} 
+          questProgress={questProgress} 
+          dayStreak={dayStreakCount}
+          achievements={achievements}
         />
       )}
     </div>
