@@ -3,6 +3,7 @@ import './Dashboard.css';
 import { useAuth0 } from "@auth0/auth0-react";
 import TaskForm from './TaskForm';
 import Profile from './Profile';
+import EditAccount from './EditAccount';
 
 import { gapi } from "gapi-script";
 import convertEventToTask from '../utils/convertEventToTask';
@@ -14,12 +15,14 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [activeTab, setActiveTab] = useState('tasks');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showEditAccount, setShowEditAccount] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [questProgress, setQuestProgress] = useState(0);
   const [currentLevel, setCurrentLevel] = useState(1);
   const [streak, setStreak] = useState(0);
   const [achievements, setAchievements] = useState([]);
+  const [userData, setUserData] = useState(user);
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -246,7 +249,12 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   };
 
   const handleEditAccount = () => {
-    window.open('https://manage.auth0.com/manage-users', '_blank');
+    setShowEditAccount(true);
+    setShowProfileMenu(false);
+  };
+
+  const handleUpdateUser = (updatedUser) => {
+    setUserData(updatedUser);
   };
 
   // Sample data
@@ -360,14 +368,14 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             onClick={() => setShowProfileMenu(!showProfileMenu)}
           >
             <div className="avatar">
-              {user ? user.name.substring(0, 2).toUpperCase() : 'JD'}
+              {userData ? userData.name.substring(0, 2).toUpperCase() : 'JD'}
             </div>
             <div className="user-info">
               <div className="user-name">
-                {user ? user.name : 'John Doe'}
+                {userData ? userData.name : 'John Doe'}
               </div>
               <div className="user-role">
-                {user ? user.email : 'Product Manager'}
+                {userData ? userData.email : 'Product Manager'}
               </div>
             </div>
             <div style={profileMenuStyle}>
@@ -538,6 +546,24 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             </div>
         </div>
       </div>
+
+      {showEditAccount && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <EditAccount 
+              user={userData} 
+              onUpdateUser={handleUpdateUser}
+              onClose={() => setShowEditAccount(false)}
+            />
+            <button 
+              className="close-button"
+              onClick={() => setShowEditAccount(false)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {showTaskForm && (
         <TaskForm

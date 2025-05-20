@@ -127,6 +127,60 @@ app.get('/calendar/events', async (req, res) => {
   }
 });
 
+// Get user achievements
+app.get('/api/users/:userId/achievements', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const achievements = store.getUserAchievements(userId);
+    res.json(achievements);
+  } catch (error) {
+    console.error('Error fetching achievements:', error);
+    res.status(500).json({ error: 'Failed to fetch achievements' });
+  }
+});
+
+// Update user information
+app.put('/api/users/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    
+    // Validate updates
+    if (!updates.name || !updates.email) {
+      return res.status(400).json({ error: 'Name and email are required' });
+    }
+
+    // Try to update or create user
+    const updatedUser = store.updateUser(userId, updates);
+    console.log('Updated user:', updatedUser.toJSON());
+    res.json(updatedUser.toJSON());
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ 
+      error: 'Failed to update user',
+      details: error.message,
+      userId
+    });
+  }
+});
+
+// Get user information
+app.get('/api/users/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = store.getUser(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user.toJSON());
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

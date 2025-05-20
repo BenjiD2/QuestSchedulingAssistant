@@ -1,20 +1,52 @@
-// server/src/models/User.js
-const mongoose = require('mongoose');
-const { Schema } = mongoose;
+// server/models/User.js
 
-// define minimal schema so Mongoose gives you a model
-const userSchema = new Schema({
-  userId:         { type: String, required: true, unique: true },
-  name:           String,
-  email:          String,
-  xp:             Number,
-  level:          Number,
-  completedTasks: Array,
-  achievements:   Array
-}, { timestamps: true });
+class User {
+  constructor(userData) {
+    this.userId = userData.userId;
+    this.name = userData.name || 'Anonymous User';
+    this.email = userData.email;
+    this.xp = userData.xp || 0;
+    this.level = userData.level || 1;
+    this.streak = userData.streak || 0;
+    this.completedTasks = userData.completedTasks || [];
+    this.achievements = userData.achievements || [];
+    this.lastActive = userData.lastActive || new Date();
+    this.lastStreakUpdate = userData.lastStreakUpdate || new Date();
+  }
 
-// compile model
-const User = mongoose.model('User', userSchema);
+  update(updates) {
+    Object.assign(this, updates);
+    return this;
+  }
 
-// Export it so your service and tests see these static methods
+  addCompletedTask(task) {
+    this.completedTasks.push({
+      ...task,
+      completedAt: new Date()
+    });
+  }
+
+  addAchievement(achievement) {
+    this.achievements.push({
+      ...achievement,
+      date: new Date()
+    });
+  }
+
+  toJSON() {
+    return {
+      userId: this.userId,
+      name: this.name,
+      email: this.email,
+      xp: this.xp,
+      level: this.level,
+      streak: this.streak,
+      completedTasks: this.completedTasks,
+      achievements: this.achievements,
+      lastActive: this.lastActive,
+      lastStreakUpdate: this.lastStreakUpdate
+    };
+  }
+}
+
 module.exports = User;
