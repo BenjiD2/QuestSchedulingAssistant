@@ -3,13 +3,16 @@ class UserProgress {
   constructor(userId) {
     this.userId = userId;
     this.xp = 0;
-    this.level = 1;
     this.streak = 0;
     this.lastActive = new Date();
     this.lastStreakUpdate = new Date();  // Track when we last updated the streak
     this.achievements = [];
     this.recentAchievements = []; // Achievements earned in current session
   }
+
+  get level() {
+    return this.calculateLevel(this.xp);
+  }  
 
   calculateLevel(xp) {
     return Math.floor(xp / 100) + 1;
@@ -47,47 +50,59 @@ class UserProgress {
   }
 
   addXP(xpGained) {
-    const oldLevel = this.level;
+    const oldLevel = this.calculateLevel(this.xp);
     this.xp += xpGained;
-    this.level = this.calculateLevel(this.xp);
-    
-    // Check for level-up
-    if (this.level > oldLevel) {
-      this.achievements.push({
-        id: `level-${this.level}`,
-        icon: '⭐',
-        name: 'Level Up!',
-        description: `Reached Level ${this.level}`,
-        date: new Date()
-      });
+    const newLevel = this.calculateLevel(this.xp);
+  
+    // Reset session-based achievement list
+    this.recentAchievements = [];
+  
+    // Level achievement
+    if (newLevel > oldLevel) {
+      const alreadyHas = this.achievements.some(a => a.id === `level-${newLevel}`);
+      if (!alreadyHas) {
+        const achievement = {
+          id: `level-${newLevel}`,
+          icon: '⭐',
+          name: 'Level Up!',
+          description: `Reached Level ${newLevel}`,
+          date: new Date()
+        };
+        this.achievements.push(achievement);
+        this.recentAchievements.push(achievement); // ✅ NEW
+      }
     }
-
+  
+    // Update streak (may add more achievements)
     this.updateStreak();
+  
     return {
       xp: this.xp,
-      level: this.level,
+      level: newLevel,
       progress: this.calculateProgress(this.xp),
       streak: this.streak,
-      achievements: this.getRecentAchievements(),
+      achievements: this.recentAchievements, // ✅ Only return new ones
       lastActive: this.lastActive,
       lastStreakUpdate: this.lastStreakUpdate
     };
-  }
+  }  
 
   checkStreakAchievements() {
     const streakMilestones = [7, 30, 100];
     for (const milestone of streakMilestones) {
       if (this.streak === milestone) {
-        this.achievements.push({
+        const achievement = {
           id: `streak-${milestone}`,
           icon: '🔥',
           name: 'Streak Master',
           description: `${milestone} Day Streak!`,
           date: new Date()
-        });
+        };
+        this.achievements.push(achievement);
+        this.recentAchievements.push(achievement); // ✅ NEW
       }
     }
-  }
+  }  
 
   getRecentAchievements() {
     // Get achievements from the last 24 hours
