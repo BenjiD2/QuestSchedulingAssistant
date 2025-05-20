@@ -134,7 +134,7 @@ Here are the specific scenarios covered by the current acceptance tests:
 
 These acceptance tests provide confidence that the core API endpoints are correctly defined, accessible, and perform basic input validation as expected, contributing to the overall reliability of the application's server-side functionality.
 
-## Milestone 4A
+## Milestone 4b
 
 In the first iteration, we completed the basic functionality of the web app, including creating a dashboard UI, integrating the Google Calendar API, adding/deleting/modifying tasks, and updating users' schedules accordingly. 
 
