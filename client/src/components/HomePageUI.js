@@ -59,7 +59,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         })
         .then(() => gapi.auth2.getAuthInstance().signIn())
         .then(() => {
-          setIsSignedIn(true); // ✅ Now you're tracking the state
+          setIsSignedIn(true);
   
           return gapi.client.calendar.events.list({
             calendarId: "primary",
