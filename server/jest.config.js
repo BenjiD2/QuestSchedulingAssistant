@@ -3,7 +3,7 @@ module.exports = {
     {
       displayName: 'server',
       testEnvironment: 'node',
-      testMatch: ['**/tests/unit/*.test.js'],
+      testMatch: ['**/tests/**/*.test.js'],
       transform: {
         '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './.babelrc' }]
       },

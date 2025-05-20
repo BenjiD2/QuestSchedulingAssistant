@@ -198,6 +198,12 @@ app.get('/api/users/:userId', (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+
+if (require.main === module) {
+  // Start the server only if this file is run directly
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+module.exports = app; // Export the app instance for testing
