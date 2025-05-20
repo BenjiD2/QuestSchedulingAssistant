@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75.86% </span>
+                <span class="strong">77.41% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>22/29</span>
+                <span class='fraction'>24/31</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">88% </span>
+                <span class="strong">88.88% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>22/25</span>
+                <span class='fraction'>24/27</span>
             </div>
         
             
@@ -143,9 +143,20 @@
 <a name='L78'></a><a href='#L78'>78</a>
 <a name='L79'></a><a href='#L79'>79</a>
 <a name='L80'></a><a href='#L80'>80</a>
-<a name='L81'></a><a href='#L81'>81</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -223,28 +234,39 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// server/src/services/userService.js
 &nbsp;
-import User from '../models/User.js';
+const User = require('../models/User');
 &nbsp;
 /**
  * createUser: creates a new user document in MongoDB
  */
-export async function createUser(userData) {
+async function createUser(userData) {
   return User.create(userData);
 }
 &nbsp;
 /**
  * getUserById: finds a user by their userId (no .exec so mocks can return directly)
  */
-export async function getUserById(id) {
+async function getUserById(id) {
   return User.findOne({ userId: id });
 }
 &nbsp;
 /**
  * updateUserName: changes the user's display name
  */
-export async function <span class="fstat-no" title="function not covered" >updateUserName(</span>id, name) {
+async function <span class="fstat-no" title="function not covered" >updateUserName(</span>id, name) {
 <span class="cstat-no" title="statement not covered" >  return User.findOneAndUpdate(</span>
     { userId: id },
     { name },
@@ -255,7 +277,7 @@ export async function <span class="fstat-no" title="function not covered" >updat
 /**
  * deleteUser: removes a user account
  */
-export async function <span class="fstat-no" title="function not covered" >deleteUser(</span>id) {
+async function <span class="fstat-no" title="function not covered" >deleteUser(</span>id) {
   const res = <span class="cstat-no" title="statement not covered" >await User.deleteOne({ userId: id });</span>
 <span class="cstat-no" title="statement not covered" >  return res.deletedCount === 1;</span>
 }
@@ -263,7 +285,7 @@ export async function <span class="fstat-no" title="function not covered" >delet
 /**
  * updateUserXP: sets the user's xp to a new value, then saves &amp; returns user
  */
-export async function updateUserXP(id, xp) {
+async function updateUserXP(id, xp) {
   const user = await getUserById(id);
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!user) <span class="cstat-no" title="statement not covered" >return null;</span>
   user.xp = xp;
@@ -274,7 +296,7 @@ export async function updateUserXP(id, xp) {
 /**
  * updateUserStreak: sets the user's streak to a new value, then saves &amp; returns user
  */
-export async function updateUserStreak(id, streak) {
+async function updateUserStreak(id, streak) {
   const user = await getUserById(id);
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!user) <span class="cstat-no" title="statement not covered" >return null;</span>
   user.streak = streak;
@@ -285,7 +307,7 @@ export async function updateUserStreak(id, streak) {
 /**
  * addAchievement: appends an achievement object and returns updated user
  */
-export async function addAchievement(id, achievement) {
+async function addAchievement(id, achievement) {
   const user = await getUserById(id);
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!user) <span class="cstat-no" title="statement not covered" >return null;</span>
   user.achievements.push(achievement);
@@ -296,13 +318,24 @@ export async function addAchievement(id, achievement) {
 /**
  * addCompletedTask: appends a completedTask record and returns updated user
  */
-export async function addCompletedTask(id, task) {
+async function addCompletedTask(id, task) {
   const user = await getUserById(id);
   <span class="missing-if-branch" title="if path not taken" >I</span>if (!user) <span class="cstat-no" title="statement not covered" >return null;</span>
   user.completedTasks.push(task);
   await user.save();
   return user;
 }
+&nbsp;
+module.exports = {
+  createUser,
+  getUserById,
+  updateUserName,
+  deleteUser,
+  updateUserXP,
+  updateUserStreak,
+  addAchievement,
+  addCompletedTask
+};
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -310,7 +343,7 @@ export async function addCompletedTask(id, task) {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-05-19T21:46:33.289Z
+                at 2025-05-20T03:13:19.458Z
             </div>
         <script src="../prettify.js"></script>
         <script>

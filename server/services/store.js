@@ -25,11 +25,7 @@ const getOrCreateUser = (auth0User) => {
 // Helper to get or create user progress
 const getOrCreateUserProgress = (userId) => {
   if (!userProgress.has(userId)) {
-    const progress = new UserProgress(userId);
-    // Initialize with current time
-    progress.lastActive = new Date();
-    progress.lastStreakUpdate = new Date();
-    userProgress.set(userId, progress);
+    userProgress.set(userId, new UserProgress(userId));
   }
   return userProgress.get(userId);
 };

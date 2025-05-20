@@ -23,25 +23,25 @@ describe('TaskManager Integration Tests', () => {
   let mockCalendarService;
 
   beforeEach(() => {
-    // Clear all mocks before each test
-    jest.clearAllMocks();
+    // Create a mock calendar service
+    mockCalendarService = {
+      addEvent: jest.fn(),
+      updateEvent: jest.fn(),
+      deleteEvent: jest.fn()
+    };
     
-    // Create a new instance of TaskManager for each test
-    taskManager = new TaskManager();
-    
-    // Get the mocked calendar service instance
-    mockCalendarService = taskManager.calendarService;
+    // Initialize TaskManager with mock service
+    taskManager = new TaskManager(mockCalendarService);
   });
 
   describe('Task Creation', () => {
-    it('should create task and sync with calendar', async () => {
+    test('should create task and sync with calendar', async () => {
       const taskData = {
         title: 'Test Task',
         description: 'Test Description',
-        startTime: new Date('2024-03-20T10:00:00'),
-        endTime: new Date('2024-03-20T11:00:00'),
-        priority: 'high',
-        status: 'pending'
+        startTime: new Date('2023-12-01T10:00:00'),
+        endTime: new Date('2023-12-01T11:00:00'),
+        category: 'work'
       };
 
       // Mock successful calendar sync
@@ -49,27 +49,29 @@ describe('TaskManager Integration Tests', () => {
 
       const task = await taskManager.addTask(taskData);
 
-      expect(task).toBeInstanceOf(Task);
-      expect(task.title).toBe(taskData.title);
+      expect(task).toMatchObject(taskData);
+      expect(task.taskId).toBeDefined();
       expect(mockCalendarService.addEvent).toHaveBeenCalled();
     });
 
-    it('should handle calendar sync failure during task creation', async () => {
+    test('should handle calendar sync failure during task creation', async () => {
       const taskData = {
         title: 'Test Task',
         description: 'Test Description',
-        startTime: new Date('2024-03-20T10:00:00'),
-        endTime: new Date('2024-03-20T11:00:00'),
-        priority: 'high',
-        status: 'pending'
+        startTime: new Date('2023-12-01T10:00:00'),
+        endTime: new Date('2023-12-01T11:00:00'),
+        category: 'work'
       };
 
       // Mock calendar sync failure
       mockCalendarService.addEvent.mockRejectedValue(new Error('Calendar API Error'));
 
-      await expect(taskManager.addTask(taskData))
-        .rejects
-        .toThrow('Failed to add task: Calendar API Error');
+      const task = await taskManager.addTask(taskData);
+      
+      expect(task).toMatchObject(taskData);
+      expect(task.taskId).toBeDefined();
+      // Task should still be created even if calendar sync fails
+      expect(mockCalendarService.addEvent).toHaveBeenCalled();
     });
   });
 
@@ -77,49 +79,47 @@ describe('TaskManager Integration Tests', () => {
     let existingTask;
 
     beforeEach(async () => {
-      // Create a task before each update test
       const taskData = {
         title: 'Original Task',
         description: 'Original Description',
-        startTime: new Date('2024-03-20T10:00:00'),
-        endTime: new Date('2024-03-20T11:00:00'),
-        priority: 'high',
-        status: 'pending'
+        startTime: new Date('2023-12-01T10:00:00'),
+        endTime: new Date('2023-12-01T11:00:00'),
+        category: 'work'
       };
 
       mockCalendarService.addEvent.mockResolvedValue({ id: 'calendar-event-1' });
       existingTask = await taskManager.addTask(taskData);
     });
 
-    it('should successfully update task and sync with calendar', async () => {
-      const updates = {
+    test('should successfully update task and sync with calendar', async () => {
+      const updateData = {
         title: 'Updated Task',
-        startTime: new Date('2024-03-20T14:00:00'),
-        endTime: new Date('2024-03-20T15:00:00')
+        startTime: new Date('2023-12-01T11:00:00'),
+        endTime: new Date('2023-12-01T12:00:00')
       };
 
-      // Mock successful calendar update
       mockCalendarService.updateEvent.mockResolvedValue({ id: 'calendar-event-1' });
 
-      const updatedTask = await taskManager.editTask(existingTask.taskId, updates);
+      const updatedTask = await taskManager.editTask(existingTask.taskId, updateData);
 
-      expect(updatedTask.title).toBe(updates.title);
+      expect(updatedTask.title).toBe(updateData.title);
+      expect(updatedTask.startTime).toEqual(updateData.startTime);
+      expect(updatedTask.endTime).toEqual(updateData.endTime);
       expect(mockCalendarService.updateEvent).toHaveBeenCalled();
     });
 
-    it('should handle calendar sync failure gracefully', async () => {
-      const updates = {
-        title: 'Updated Task',
-        startTime: new Date('2024-03-20T14:00:00'),
-        endTime: new Date('2024-03-20T15:00:00')
+    test('should handle calendar sync failure gracefully', async () => {
+      const updateData = {
+        title: 'Updated Task'
       };
 
-      // Mock calendar sync failure
       mockCalendarService.updateEvent.mockRejectedValue(new Error('Calendar API Error'));
 
-      await expect(taskManager.editTask(existingTask.taskId, updates))
-        .rejects
-        .toThrow('Failed to sync task with calendar');
+      const updatedTask = await taskManager.editTask(existingTask.taskId, updateData);
+
+      expect(updatedTask.title).toBe(updateData.title);
+      // Task should still be updated even if calendar sync fails
+      expect(mockCalendarService.updateEvent).toHaveBeenCalled();
     });
   });
 
@@ -127,37 +127,36 @@ describe('TaskManager Integration Tests', () => {
     let existingTask;
 
     beforeEach(async () => {
-      // Create a task before each deletion test
       const taskData = {
         title: 'Task to Delete',
         description: 'Will be deleted',
-        startTime: new Date('2024-03-20T10:00:00'),
-        endTime: new Date('2024-03-20T11:00:00'),
-        priority: 'high',
-        status: 'pending'
+        startTime: new Date('2023-12-01T10:00:00'),
+        endTime: new Date('2023-12-01T11:00:00'),
+        category: 'work'
       };
 
       mockCalendarService.addEvent.mockResolvedValue({ id: 'calendar-event-1' });
       existingTask = await taskManager.addTask(taskData);
     });
 
-    it('should delete task and calendar event', async () => {
-      // Mock successful calendar deletion
-      mockCalendarService.deleteEvent.mockResolvedValue();
+    test('should delete task and calendar event', async () => {
+      mockCalendarService.deleteEvent.mockResolvedValue({});
 
       await taskManager.deleteTask(existingTask.taskId);
 
       expect(mockCalendarService.deleteEvent).toHaveBeenCalled();
-      expect(taskManager.tasks.find(t => t.taskId === existingTask.taskId)).toBeUndefined();
+      // Verify task is removed from internal storage
+      await expect(taskManager.getTask(existingTask.taskId)).rejects.toThrow();
     });
 
-    it('should handle calendar deletion failure', async () => {
-      // Mock calendar deletion failure
+    test('should handle calendar deletion failure', async () => {
       mockCalendarService.deleteEvent.mockRejectedValue(new Error('Calendar API Error'));
 
-      await expect(taskManager.deleteTask(existingTask.taskId))
-        .rejects
-        .toThrow('Failed to delete task: Calendar API Error');
+      await taskManager.deleteTask(existingTask.taskId);
+
+      expect(mockCalendarService.deleteEvent).toHaveBeenCalled();
+      // Task should still be deleted even if calendar sync fails
+      await expect(taskManager.getTask(existingTask.taskId)).rejects.toThrow();
     });
   });
 });

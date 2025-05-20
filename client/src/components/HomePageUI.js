@@ -516,7 +516,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
                 <div className="streak-info">
                     <span className="streak-flame">🔥</span>
                     <div className="streak-count">
-                    <h3>{streak}</h3>
+                    <h3>{streakDays}</h3>
                     <p>Day Streak</p>
                     </div>
                 </div>

@@ -2,11 +2,12 @@
  * Manages tasks and their synchronization with Google Calendar
  */
 const Task = require('./Task');
+const crypto = require('crypto');
 
 class TaskManager {
     constructor(calendarService = null) {
-      this.tasks = []; 
       this.calendarService = calendarService;
+      this.tasks = [];
     }
   
   /**
@@ -14,40 +15,75 @@ class TaskManager {
    * @param {Object} taskData - Task data
    * @returns {Promise<Task>} Created task
    */
-  async addTask(taskData) {
-    try {
-      // Create a new task instance
-      const task = new Task(taskData);
+  validateTask(taskData, excludeTaskId = null) {
+    // Check required fields
+    if (!taskData.title) {
+      throw new Error('Missing required fields');
+    }
 
-      // Check for conflicts with existing tasks
+    // Validate dates if provided
+    if (taskData.startTime || taskData.endTime) {
+      if (!(taskData.startTime instanceof Date) || !(taskData.endTime instanceof Date)) {
+        throw new Error('Invalid date format');
+      }
+
+      if (taskData.endTime <= taskData.startTime) {
+        throw new Error('End time must be after start time');
+      }
+
+      // Check for schedule conflicts, excluding the task being updated
       const hasConflict = this.tasks.some(existingTask => {
-        return this.hasTimeOverlap(
-          task.startTime,
-          task.endTime,
-          existingTask.startTime,
-          existingTask.endTime
+        // Skip the task being edited
+        if (excludeTaskId && existingTask.taskId === excludeTaskId) {
+          return false;
+        }
+
+        if (!existingTask.startTime || !existingTask.endTime) {
+          return false;
+        }
+
+        return (
+          (taskData.startTime >= existingTask.startTime && taskData.startTime < existingTask.endTime) ||
+          (taskData.endTime > existingTask.startTime && taskData.endTime <= existingTask.endTime) ||
+          (taskData.startTime <= existingTask.startTime && taskData.endTime >= existingTask.endTime)
         );
       });
 
       if (hasConflict) {
         throw new Error('Schedule conflict detected');
       }
+    }
+  }
+
+  async addTask(taskData) {
+    try {
+      // Validate task data
+      this.validateTask(taskData);
+
+      // Create task
+      const task = {
+        ...taskData,
+        taskId: crypto.randomUUID(),
+        completed: false
+      };
 
       // Try to sync with calendar if service is available
       if (this.calendarService) {
         try {
           const calendarEvent = await this.calendarService.addEvent(task);
-          task.googleEventId = calendarEvent?.id || calendarEvent?.eventId;
+          if (calendarEvent && calendarEvent.id) {
+            task.googleEventId = calendarEvent.id;
+          }
         } catch (error) {
-          console.log('Failed to sync with calendar:', error.message);
+          console.error('Failed to sync with calendar:', error);
+          // Continue without calendar sync
         }
       }
 
-      // Add task to the list
       this.tasks.push(task);
       return task;
     } catch (error) {
-      throw new Error(`Failed to add task: ${error.message}`);
+      throw error;
     }
   }
 
@@ -151,68 +187,29 @@ class TaskManager {
    * @returns {Promise<Task>} Updated task
    */
   async editTask(taskId, updates) {
-    // Find the task first
-        const task = this.tasks.find(t => t.taskId === taskId);
-        if (!task) {
-      throw new Error('Task not found');
-        }
-      
     try {
-      // Create a temporary task with the updates to check for conflicts
-      const tempTask = {
-        ...task,
-        ...updates,
-        startTime: updates.startTime ? new Date(updates.startTime.toISOString()) : task.startTime,
-        endTime: updates.endTime ? new Date(updates.endTime.toISOString()) : task.endTime
-      };
-
-      // Validate time range
-      if (tempTask.endTime <= tempTask.startTime) {
-        throw new Error('End time must be after start time');
+      const taskIndex = this.tasks.findIndex(t => t.taskId === taskId);
+      if (taskIndex === -1) {
+        throw new Error('Task not found');
       }
 
-      // Check for conflicts with other tasks
-      const hasConflict = this.tasks.some(otherTask => {
-        // Skip the task being edited
-        if (otherTask.taskId === taskId) return false;
+      const updatedTask = { ...this.tasks[taskIndex], ...updates };
+      
+      // Validate the updated task, excluding itself from conflict check
+      this.validateTask(updatedTask, taskId);
 
-        // Check for overlap with the updated times
-        const otherStart = new Date(otherTask.startTime.toISOString());
-        const otherEnd = new Date(otherTask.endTime.toISOString());
-        return this.hasTimeOverlap(
-          tempTask.startTime,
-          tempTask.endTime,
-          otherStart,
-          otherEnd
-        );
-      });
-
-      if (hasConflict) {
-        throw new Error('Schedule conflict detected');
-      }
-
-      // Try to sync with calendar
-      let calendarEvent;
-      try {
-        if (task.googleEventId) {
-          calendarEvent = await this.calendarService.updateEvent({
-            ...tempTask,
-            googleEventId: task.googleEventId
-          });
-        } else {
-          calendarEvent = await this.calendarService.addEvent(tempTask);
+      // Try to sync with calendar if service is available
+      if (this.calendarService && updatedTask.googleEventId) {
+        try {
+          await this.calendarService.updateEvent(updatedTask);
+        } catch (error) {
+          console.error('Failed to sync with calendar:', error);
+          // Continue without calendar sync
         }
-
-        // Update the task with calendar event ID and other updates
-        Object.assign(task, {
-          ...tempTask,
-          googleEventId: calendarEvent?.id || calendarEvent?.eventId || task.googleEventId
-        });
-
-        return task;
-      } catch (error) {
-        throw new Error('Failed to sync task with calendar');
       }
+
+      this.tasks[taskIndex] = updatedTask;
+      return updatedTask;
     } catch (error) {
       throw error;
     }
@@ -225,28 +222,24 @@ class TaskManager {
    */
   async deleteTask(taskId) {
     try {
-      const task = this.tasks.find(t => t.taskId === taskId);
-      if (!task) {
+      const taskIndex = this.tasks.findIndex(t => t.taskId === taskId);
+      if (taskIndex === -1) {
         throw new Error('Task not found');
       }
 
-      try {
-        // Delete recurring event first if it exists
-        if (task.recurrence) {
-          await this.calendarService.deleteEvent(`recurring_${task.googleEventId}`);
+      const task = this.tasks[taskIndex];
+
+      // Try to delete from calendar if service is available
+      if (this.calendarService && task.googleEventId) {
+        try {
+          await this.calendarService.deleteEvent(task.googleEventId);
+        } catch (error) {
+          console.error('Failed to delete from calendar:', error);
+          // Continue with local deletion
         }
+      }
 
-        // Delete the main calendar event
-        await this.calendarService.deleteEvent(task.googleEventId);
-
-        // Remove task from local storage
-        this.tasks = this.tasks.filter(t => t.taskId !== taskId);
-
-        // Remove any recurring instances
-        this.tasks = this.tasks.filter(t => t.originalTaskId !== taskId);
-      } catch (error) {
-        throw new Error(`Failed to delete task: ${error.message}`);
-        }
+      this.tasks.splice(taskIndex, 1);
     } catch (error) {
       throw error;
     }
@@ -269,6 +262,14 @@ class TaskManager {
     }
     
     return true;
+  }
+
+  async getTask(taskId) {
+    const task = this.tasks.find(t => t.taskId === taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+    return task;
   }
 }
 

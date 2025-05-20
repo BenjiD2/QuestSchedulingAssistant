@@ -24,26 +24,25 @@ class UserProgress {
     const lastActiveDate = new Date(this.lastActive);
     const lastStreakDate = new Date(this.lastStreakUpdate);
     
-    // Check if we're in a new day (comparing calendar dates)
-    const isNewDay = now.toDateString() !== lastStreakDate.toDateString();
-    
-    if (isNewDay) {
-      // If more than 48 hours have passed since last activity, reset streak
-      const hoursSinceLastActive = (now - lastActiveDate) / (1000 * 60 * 60);
-      if (hoursSinceLastActive > 48) {
-        console.log('Streak reset: More than 48 hours since last activity');
-        this.streak = 1;
-      } else {
-        // If within 48 hours and it's a new day, increment streak
+    // Check if more than 48 hours have passed since last activity
+    if ((now - lastActiveDate) > (48 * 60 * 60 * 1000)) {
+      this.streak = 1; // Reset streak if inactive for 2 days
+      this.lastStreakUpdate = now;
+    } else {
+      // Check if we're in a new day (comparing calendar dates)
+      const isNewDay = now.toDateString() !== lastStreakDate.toDateString();
+      
+      // Check if at least 24 hours have passed since last streak update
+      const is24HoursPassed = (now - lastStreakDate) > (24 * 60 * 60 * 1000);
+      
+      // Only update streak if it's a new day AND 24 hours have passed
+      if (isNewDay && is24HoursPassed) {
         this.streak++;
-        console.log('Streak increased to:', this.streak);
+        this.lastStreakUpdate = now;
         this.checkStreakAchievements();
       }
-      // Update the last streak update time
-      this.lastStreakUpdate = now;
     }
     
-    // Always update lastActive
     this.lastActive = now;
   }
 
