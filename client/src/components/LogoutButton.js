@@ -1,3 +1,6 @@
+// Component for the logout button.
+// Initiates the Auth0 logout process when clicked.
+
 import React from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 

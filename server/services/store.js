@@ -1,3 +1,6 @@
+// In-memory data store for users and tasks.
+// Provides functions for accessing and manipulating user and task data.
+
 const UserProgress = require('../models/UserProgress');
 const User = require('../models/User');
 

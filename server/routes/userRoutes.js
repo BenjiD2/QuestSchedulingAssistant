@@ -1,4 +1,6 @@
-// server/src/routes/userRoutes.js
+// Server-side API routes for user management.
+// This file defines endpoints for fetching, updating, and deleting user information.
+
 const express = require('express');
 const store = require('../services/store');
 

@@ -1,9 +1,12 @@
+// Jest configuration file for the server.
+// Configures how Jest runs tests in the server directory.
+
 module.exports = {
   projects: [
     {
       displayName: 'server',
       testEnvironment: 'node',
-      testMatch: ['**/tests/unit/*.test.js'],
+      testMatch: ['**/tests/**/*.test.js'],
       transform: {
         '^.+\\.(js|jsx)$': ['babel-jest', { configFile: './.babelrc' }]
       },

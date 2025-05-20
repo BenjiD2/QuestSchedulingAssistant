@@ -1,3 +1,6 @@
+// Handles the SQLite database connection and operations.
+// Provides methods for interacting with the SQLite database for data storage and retrieval.
+
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 

@@ -1,3 +1,5 @@
+// Unit tests for the calendar conversion utility functions.
+
 const { convertEventToTask, convertEventsToTasks } = require("./calendarConverter"); // update path if needed
 
 describe("convertEventToTask", () => {

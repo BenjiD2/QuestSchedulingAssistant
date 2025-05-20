@@ -1,3 +1,6 @@
+// Google Calendar integration component.
+// Handles fetching and displaying events from Google Calendar.
+
 import React, { useEffect, useState } from "react";
 import { gapi } from "gapi-script";
 

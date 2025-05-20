@@ -1,3 +1,6 @@
+// Defines the UserProgress class.
+// This class tracks a user's experience points (XP), level, streaks, and achievements.
+
 // server/models/UserProgress.js
 class UserProgress {
   constructor(userId) {

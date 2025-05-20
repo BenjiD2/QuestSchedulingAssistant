@@ -1,3 +1,6 @@
+// In-memory database client for testing purposes.
+// Provides a simplified interface for database operations using an in-memory Map.
+
 class InMemoryDB {
     constructor() {
       this.tables = new Map(); 

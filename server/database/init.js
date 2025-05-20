@@ -1,3 +1,6 @@
+// Initializes the database connection and synchronizes models.
+// This file connects to the database and ensures the necessary tables exist.
+
 const sequelize = require('../config/database');
 const path = require('path');
 const fs = require('fs');
