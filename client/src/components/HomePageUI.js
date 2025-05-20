@@ -17,6 +17,9 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [editingTask, setEditingTask] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [questProgress, setQuestProgress] = useState(0);
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [streak, setStreak] = useState(0);
+  const [achievements, setAchievements] = useState([]);
   const profileMenuRef                   = useRef(null);
   const { logout }                       = useAuth0();
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -158,15 +161,6 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       console.log('Calculated XP gain:', xpGained);
       console.log('Making request with userId:', user.sub);
 
-      // Update task completion status locally
-      setTasks(tasks.map(t => {
-        if (t.taskId === taskId) {
-          return { ...t, completed: true };
-        }
-        return t;
-      }));
-
-      // Update user's XP in the backend
       const requestData = {
         userId: user.sub,
         xpGained: xpGained
@@ -181,17 +175,26 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         body: JSON.stringify(requestData)
       });
 
-      console.log('Response status:', response.status);
-      const responseData = await response.json();
-      console.log('Response data:', responseData);
-
+      const progressData = await response.json();
+      
       if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to update XP');
+        throw new Error(progressData.error || 'Failed to update XP');
       }
 
-      // Update the progress bar with the new XP value
-      const progress = (responseData.xp % 100);
-      setQuestProgress(progress);
+      // Update all progress-related state
+      setQuestProgress(progressData.progress);
+      setCurrentLevel(progressData.level);
+      setStreak(progressData.streak);
+      
+      // Update achievements if there are new ones
+      if (progressData.achievements?.length > 0) {
+        setAchievements(prev => [...progressData.achievements, ...prev].slice(0, 3));
+      }
+
+      // Update task completion
+      setTasks(tasks.map(t => 
+        t.taskId === taskId ? { ...t, completed: true } : t
+      ));
       
     } catch (error) {
       console.error('Error updating XP:', error);
@@ -306,13 +309,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   ];
 
   const streakDays = 7;
-  const currentLevel = 3;
   const questGoal = 100;
-  const achievements = [
-    { icon: '🔥', name: 'On Fire', description: '7-day streak' },
-    { icon: '⭐', name: 'Super Achiever', description: 'Completed 5 tasks today' },
-    { icon: '🚀', name: 'Productivity Master', description: 'Completed all tasks yesterday' }
-  ];
 
   // Build calendarDays array…
   const calendarDays = [];
@@ -519,7 +516,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
                 <div className="streak-info">
                     <span className="streak-flame">🔥</span>
                     <div className="streak-count">
-                    <h3>{streakDays}</h3>
+                    <h3>{streak}</h3>
                     <p>Day Streak</p>
                     </div>
                 </div>

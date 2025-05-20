@@ -1,5 +1,8 @@
+const UserProgress = require('../models/UserProgress');
+
 // In-memory store for users and tasks
 const users = new Map();
+const userProgress = new Map();
 const tasks = new Map();
 
 // Helper to get or create user
@@ -17,6 +20,29 @@ const getOrCreateUser = (auth0User) => {
     });
   }
   return users.get(userId);
+};
+
+// Helper to get or create user progress
+const getOrCreateUserProgress = (userId) => {
+  if (!userProgress.has(userId)) {
+    const progress = new UserProgress(userId);
+    // Initialize with current time
+    progress.lastActive = new Date();
+    progress.lastStreakUpdate = new Date();
+    userProgress.set(userId, progress);
+  }
+  return userProgress.get(userId);
+};
+
+// Update the XP update function
+const updateUserXP = (userId, xpGained) => {
+  const progress = getOrCreateUserProgress(userId);
+  const updatedProgress = progress.addXP(xpGained);
+  
+  // Save to store
+  userProgress.set(userId, progress);
+  
+  return updatedProgress;
 };
 
 // Helper to get all users sorted by XP
@@ -37,23 +63,19 @@ const calculateLevel = (xp) => {
   return Math.floor(xp / 100) + 1;
 };
 
-// Helper to calculate progress to next level
+// Helper to get progress to next level
 const getProgressToNextLevel = (xp) => {
-  const currentLevel = calculateLevel(xp);
-  const xpForCurrentLevel = (currentLevel - 1) * 100;
-  const xpForNextLevel = currentLevel * 100;
-  const currentXP = xp - xpForCurrentLevel;
-  const requiredXP = xpForNextLevel - xpForCurrentLevel;
-  const percentage = Math.min(Math.round((currentXP / requiredXP) * 100), 100);
-  
-  return { currentXP, requiredXP, percentage };
+  return xp % 100;
 };
 
 module.exports = {
   users,
   tasks,
+  userProgress,
   getOrCreateUser,
   getLeaderboard,
+  getOrCreateUserProgress,
+  updateUserXP,
   calculateLevel,
   getProgressToNextLevel
 }; 

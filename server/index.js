@@ -39,7 +39,7 @@ app.post('/api/users/xp', async (req, res) => {
     console.log('Received XP update request:', req.body);
     const { userId, xpGained } = req.body;
     
-    // Strict input validation
+    // Validate inputs
     if (!userId || typeof userId !== 'string') {
       console.log('Invalid userId:', userId);
       return res.status(400).json({ error: 'Invalid userId: must be a non-empty string' });
@@ -50,52 +50,12 @@ app.post('/api/users/xp', async (req, res) => {
       return res.status(400).json({ error: 'Invalid xpGained: must be a positive number' });
     }
 
-    // Initialize user if they don't exist
-    if (!store.users.has(userId)) {
-      console.log('Creating new user:', userId);
-      store.users.set(userId, {
-        id: userId,
-        name: 'Anonymous User',
-        xp: 0,
-        level: 1,
-        streak: 0,
-        achievements: []
-      });
-    }
-
-    // Get user and update XP
-    const user = store.users.get(userId);
-    if (!user) {
-      console.error('Failed to get/create user:', userId);
-      return res.status(500).json({ error: 'Failed to get/create user' });
-    }
-
-    console.log('Current user data:', user);
-
-    // Ensure XP is a number and has a default value
-    const oldXp = typeof user.xp === 'number' ? user.xp : 0;
-    const newXp = oldXp + xpGained;
-
-    // Update user data
-    const updatedUser = {
-      ...user,
-      xp: newXp,
-      level: store.calculateLevel(newXp)
-    };
-
-    // Save updated user
-    store.users.set(userId, updatedUser);
-
-    const response = {
-      id: updatedUser.id,
-      xp: updatedUser.xp,
-      level: updatedUser.level,
-      streak: updatedUser.streak,
-      progress: store.getProgressToNextLevel(updatedUser.xp)
-    };
-
-    console.log('Updated user data:', response);
-    res.json(response);
+    // Update progress using the new system
+    const updatedProgress = store.updateUserXP(userId, xpGained);
+    
+    console.log('Updated progress:', updatedProgress);
+    res.json(updatedProgress);
+    
   } catch (error) {
     console.error('XP update error:', error);
     console.error('Error stack:', error.stack);
