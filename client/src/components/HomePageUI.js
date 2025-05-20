@@ -131,15 +131,54 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
 
   };
 
-  const handleEditTask = (taskData) => {
-    setTasks(tasks.map(task => 
-      task.taskId === editingTask.taskId ? { ...task, ...taskData } : task
+  const handleEditTask = async (taskData) => {
+    const updatedTask = { ...editingTask, ...taskData };
+
+    try {
+      if (isSignedIn && updatedTask.googleEventId) {
+        await gapi.client.calendar.events.update({
+          calendarId: "primary",
+          eventId: updatedTask.googleEventId,
+          resource: {
+            summary: updatedTask.title,
+            description: updatedTask.description,
+            location: updatedTask.location,
+            start: {
+              dateTime: new Date(updatedTask.startTime).toISOString(),
+              timeZone: "UTC",
+            },
+            end: {
+              dateTime: new Date(updatedTask.endTime).toISOString(),
+              timeZone: "UTC",
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to update Google Calendar event:", err);
+    }
+
+    setTasks(tasks.map(task =>
+      task.taskId === editingTask.taskId ? updatedTask : task
     ));
     setEditingTask(null);
     setShowTaskForm(false);
   };
 
-  const handleDeleteTask = (taskId) => {
+  const handleDeleteTask = async (taskId) => {
+    const taskToDelete = tasks.find(t => t.taskId === taskId);
+  
+    try {
+      if (isSignedIn && taskToDelete?.googleEventId) {
+        await gapi.client.calendar.events.delete({
+          calendarId: "primary",
+          eventId: taskToDelete.googleEventId
+        });
+      }
+    } catch (err) {
+      console.error("Failed to delete Google Calendar event:", err);
+    }
+
     setTasks(tasks.filter(task => task.taskId !== taskId));
   };
 
