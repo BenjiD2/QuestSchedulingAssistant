@@ -18,7 +18,7 @@ function convertEventToTask(event) {
     endTime: end,
     duration,
     location: event.location || "",
-    recurrence: event.recurrence || [],
+    recurrence: event.recurrence || "",
     completed: false,
     googleEventId: event.id,
     xpValue: Math.round((duration / 30) * 10),
