@@ -10,7 +10,7 @@ import EditAccount from './EditAccount';
 import { gapi } from "gapi-script";
 import convertEventToTask from '../utils/convertEventToTask';
 
-const CLIENT_ID = "174375671713-4nkbn9ga7v5piqjrokpj454jfinrja9f.apps.googleusercontent.com"; 
+const CLIENT_ID = "174375671713-4nkbn9ga7v5piqjrokpj454jfinrja9f.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/calendar";
 
 export const HomePageUI = ({ user, tasks: propTasks }) => {
@@ -26,8 +26,8 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const [dayStreakCount, setDayStreakCount] = useState(0);
   const [achievements, setAchievements] = useState([]);
   const [userData, setUserData] = useState(user);
-  const profileMenuRef                   = useRef(null);
-  const { logout }                       = useAuth0();
+  const profileMenuRef = useRef(null);
+  const { logout } = useAuth0();
   const [isSignedIn, setIsSignedIn] = useState(false);
   const TASKS_PER_PAGE = 3;
   const [currentTaskPage, setCurrentTaskPage] = useState(1);
@@ -39,32 +39,32 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
 
   useEffect(() => {
     const fetchMongoDBUserData = async () => {
-      if (!user || !user.userId) { 
+      if (!user || !user.userId) {
         console.log('👤 Synced user data not available yet for HomePageUI fetch.');
         return;
       }
-      
+
       try {
         console.log(`📊 HomePageUI: Attempting to re-fetch/verify user data for user ID: ${user.userId}`);
-        
+
         const response = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(user.userId)}`);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.log(`❌ HomePageUI: Failed to fetch user data (${response.status}):`, errorText);
           return;
         }
-        
+
         const data = await response.json();
         console.log('✅ HomePageUI: Successfully fetched user data:', data);
-        
+
         if (data) {
-          setQuestProgress(data.xp % 100); 
+          setQuestProgress(data.xp % 100);
           setCurrentLevel(data.level || 1);
           setStreak(data.streak || 0);
           setDayStreakCount(data.dayStreak || 0);
           setUserData(data);
-          
+
           if (data.achievements) {
             console.log('✅ HomePageUI: Using achievements from fetched user data:', data.achievements);
             setAchievements(data.achievements);
@@ -92,36 +92,36 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         console.error('❌ HomePageUI: Network or parsing error fetching user data:', error);
       }
     };
-    
+
     if (user && user.userId) {
-        fetchMongoDBUserData();
+      fetchMongoDBUserData();
     }
   }, [user]);
 
   useEffect(() => {
     const fetchMongoDBTasks = async () => {
-      if (!user || !user.userId) { 
+      if (!user || !user.userId) {
         console.log('👤 Synced user data not available yet for task fetch in HomePageUI.');
         return;
       }
-      
+
       try {
         console.log(`📊 HomePageUI: Attempting to fetch tasks for user ID: ${user.userId}`);
         const response = await fetch('http://localhost:8080/api/tasks');
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.log(`❌ HomePageUI: Failed to fetch tasks (${response.status}):`, errorText);
           return;
         }
-        
+
         const allTasks = await response.json();
         console.log('✅ HomePageUI: Successfully fetched all tasks from MongoDB:', allTasks);
-        
+
         if (allTasks && allTasks.length > 0) {
           const userSpecificTasks = allTasks.filter(task => task.userId === user.userId);
           console.log(`Found ${userSpecificTasks.length} tasks for current user (${user.userId}) out of ${allTasks.length} total.`);
-          
+
           if (userSpecificTasks.length > 0) {
             setTasks(userSpecificTasks);
           } else {
@@ -129,9 +129,9 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             console.log('No tasks found for the current user in MongoDB data.');
           }
         } else if (propTasks && propTasks.length > 0) {
-           console.log('Using tasks from props.'); 
-           setTasks(propTasks.filter(task => task.userId === user.userId));
-        }else {
+          console.log('Using tasks from props.');
+          setTasks(propTasks.filter(task => task.userId === user.userId));
+        } else {
           setTasks([]);
           console.log('No tasks from MongoDB or props to display for this user.');
         }
@@ -139,20 +139,20 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         console.error('❌ HomePageUI: Network or parsing error fetching tasks:', error);
       }
     };
-    
+
     if (user && user.userId) {
-        fetchMongoDBTasks();
+      fetchMongoDBTasks();
     }
   }, [user, propTasks]);
 
   function getStartOfWeekISO() {
     const now = new Date();
     const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  
+
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - day); // go back to Sunday
     startOfWeek.setHours(0, 0, 0, 0); // set to 12:00 AM
-  
+
     return startOfWeek.toISOString();
   }
 
@@ -179,7 +179,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         .then(() => gapi.auth2.getAuthInstance().signIn())
         .then(() => {
           setIsSignedIn(true);
-  
+
           return gapi.client.calendar.events.list({
             calendarId: "primary",
             timeMin: getStartOfWeekISO(),
@@ -201,16 +201,23 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
 
           console.log(`🔄 Importing ${events.length} Google Calendar events as tasks for user ${currentUser.userId}...`);
           const importPromises = events.map(event => {
-            const taskData = convertEventToTask(event); // This already creates most fields
             // Ensure userId is added before sending to handleAddTask
+            const taskData = convertEventToTask(event);
             const taskWithUser = {
               ...taskData,
               userId: currentUser.userId,
               // handleAddTask will set completed: false by default
             };
+
+            // Check if task with this googleEventId already exists
+            const existingTask = tasks.find(t => t.googleEventId === event.id);
+            if (existingTask) {
+              console.log(`Task with Google Calendar ID ${event.id} already exists, skipping import`);
+              return Promise.resolve(); // Skip this task
+            }
+
             // Use handleAddTask to save each task to the backend
-            // handleAddTask already updates local state and shows toasts
-            return handleAddTask(taskWithUser, true); // Pass a flag to indicate it's a calendar import if needed for different behavior
+            return handleAddTask(taskWithUser, true);
           });
 
           Promise.all(importPromises)
@@ -228,7 +235,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
           console.error("Error during Google Calendar integration:", err);
         });
     });
-  };   
+  };
 
   const addTaskToGoogleCalendar = async (task) => {
     const event = {
@@ -244,7 +251,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         timeZone: "UTC",
       },
     };
-  
+
     return gapi.client.calendar.events.insert({
       calendarId: "primary",
       resource: event,
@@ -322,8 +329,8 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       return;
     }
 
-    const updatedTaskPayload = { 
-      ...editingTask, 
+    const updatedTaskPayload = {
+      ...editingTask,
       ...taskData,
       userId: editingTask.userId || user.userId
     };
@@ -360,7 +367,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       console.error("❌ Failed to update/add event to Google Calendar:", error);
       toast.error("Failed to update task on Google Calendar.");
     }
-    
+
     try {
       console.log(`➡️ Submitting updated task to backend (/api/tasks/${editingTask.taskId}):`, updatedTaskPayload);
       const backendResponse = await fetch(`http://localhost:8080/api/tasks/${editingTask.taskId}`, {
@@ -375,13 +382,13 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         const errorData = await backendResponse.json();
         console.error('❌ Backend task update failed:', backendResponse.status, errorData);
         toast.error(`Failed to update task: ${errorData.error || 'Unknown error'}`);
-        return; 
+        return;
       }
 
       const savedUpdatedTask = await backendResponse.json();
       console.log('✅ Task updated in backend successfully:', savedUpdatedTask);
       toast.success(`Task "${savedUpdatedTask.title}" updated!`);
-      
+
       setTasks(tasks.map(t => t.taskId === savedUpdatedTask.taskId ? savedUpdatedTask : t));
       setShowTaskForm(false);
       setEditingTask(null);
@@ -439,9 +446,9 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         }
         return; // Stop if backend delete fails or handled by 204
       }
-      
+
       // For 200 OK with potential JSON body (though DELETE often returns 204)
-      console.log('✅ Task deleted from backend successfully:', await backendResponse.json().catch(() => ({}))); 
+      console.log('✅ Task deleted from backend successfully:', await backendResponse.json().catch(() => ({})));
       toast.success(`Task "${taskToDelete.title}" deleted!`);
       setTasks(tasks.filter(task => task.taskId !== taskId));
 
@@ -493,7 +500,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       const updatedTaskFromBackend = await backendResponse.json();
       console.log(`✅ Task ${action.toLowerCase()} in backend successfully:`, updatedTaskFromBackend);
       toast.success(`Task "${updatedTaskFromBackend.title}" ${isCompleting ? 'completed' : 'marked incomplete'}!`);
-      
+
       // Update local tasks state with the task from backend
       setTasks(prevTasks => prevTasks.map(t => t.taskId === taskId ? updatedTaskFromBackend : t));
 
@@ -502,7 +509,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       // or we trigger a user data refresh.
       // For now, let's assume the updatedTaskFromBackend might contain relevant XP hints if designed so,
       // or we can re-fetch user data to update XP/level display.
-      
+
       // If the backend `updateTask` in `mongoStore` also returns updated user progress or similar,
       // you could use that here to update questProgress, currentLevel, streak, achievements.
       // For example, if `updatedTaskFromBackend.userProgress` existed:
@@ -519,21 +526,21 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         // Re-use the existing fetchMongoDBUserData logic
         const userResponse = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(user.userId)}`);
         if (userResponse.ok) {
-            const updatedUserData = await userResponse.json();
-            if (updatedUserData) {
-                setQuestProgress(updatedUserData.xp % 100);
-                setCurrentLevel(updatedUserData.level || 1);
-                setStreak(updatedUserData.streak || 0);
-                setDayStreakCount(updatedUserData.dayStreak || 0);
-                // Fetch and set achievements again as they might have changed
-                const achievementsResponse = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(user.userId)}/achievements`);
-                if (achievementsResponse.ok) {
-                    setAchievements(await achievementsResponse.json());
-                }
-                 console.log('✅ User data (XP, Level, Achievements) refreshed after task toggle.');
+          const updatedUserData = await userResponse.json();
+          if (updatedUserData) {
+            setQuestProgress(updatedUserData.xp % 100);
+            setCurrentLevel(updatedUserData.level || 1);
+            setStreak(updatedUserData.streak || 0);
+            setDayStreakCount(updatedUserData.dayStreak || 0);
+            // Fetch and set achievements again as they might have changed
+            const achievementsResponse = await fetch(`http://localhost:8080/api/users/${encodeURIComponent(user.userId)}/achievements`);
+            if (achievementsResponse.ok) {
+              setAchievements(await achievementsResponse.json());
             }
+            console.log('✅ User data (XP, Level, Achievements) refreshed after task toggle.');
+          }
         } else {
-            console.error('❌ Failed to re-fetch user data after task toggle.');
+          console.error('❌ Failed to re-fetch user data after task toggle.');
         }
       }
 
@@ -546,7 +553,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const calculateTaskXP = (task) => {
     // Base XP: 10 points per 30 minutes
     const baseXP = (task.duration / 30) * 10;
-    
+
     // Category multipliers
     const multipliers = {
       work: 1.5,
@@ -554,7 +561,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       exercise: 1.4,
       default: 1.0
     };
-    
+
     return Math.round(baseXP * (multipliers[task.category] || 1.0));
   };
 
@@ -565,7 +572,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
         <ul>
           {propTasks.map(({ taskId, title, description }) => (
             <li key={taskId}>
-              <strong>{title}</strong><br/>
+              <strong>{title}</strong><br />
               <span>{description}</span>
             </li>
           ))}
@@ -600,14 +607,14 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const isToday = (input) => {
     const eventDate = new Date(input);
     const today = new Date();
-  
+
     return (
       eventDate.getFullYear() === today.getFullYear() &&
       eventDate.getMonth() === today.getMonth() &&
       eventDate.getDate() === today.getDate()
     );
   };
-  
+
   const todayEvents = tasks.filter(
     task => task.startTime && isToday(task.startTime)
   ).map(task => ({
@@ -617,9 +624,9 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       ? `${new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(task.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
       : 'All Day',
     location: task.location || 'No location',
-    color: 'blue', 
+    color: 'blue',
   }));
-  
+
 
   const completedTasks = tasks.filter(task => task.completed);
 
@@ -631,18 +638,24 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
   const currentDate = todayDate.getDate();
 
   const weeklyEvents = [
-    { day: 'Mon', date: 21, events: [
-      { time: '9:00 AM', title: 'Team Meeting', color: 'blue' },
-      { time: '2:00 PM', title: 'Project Review', color: 'green' }
-    ]},
+    {
+      day: 'Mon', date: 21, events: [
+        { time: '9:00 AM', title: 'Team Meeting', color: 'blue' },
+        { time: '2:00 PM', title: 'Project Review', color: 'green' }
+      ]
+    },
     { day: 'Tue', date: 22, events: [] },
-    { day: 'Wed', date: 23, events: [
-      { time: '11:00 AM', title: 'Client Call', color: 'purple' }
-    ]},
+    {
+      day: 'Wed', date: 23, events: [
+        { time: '11:00 AM', title: 'Client Call', color: 'purple' }
+      ]
+    },
     { day: 'Thu', date: 24, events: [] },
-    { day: 'Fri', date: 25, events: [
-      { time: '3:30 PM', title: 'Weekly Sync', color: 'yellow' }
-    ]},
+    {
+      day: 'Fri', date: 25, events: [
+        { time: '3:30 PM', title: 'Weekly Sync', color: 'yellow' }
+      ]
+    },
     { day: 'Sat', date: 26, events: [] },
     { day: 'Sun', date: 27, events: [] }
   ];
@@ -744,33 +757,33 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
               <p>{dayOfWeek}</p>
             </div>
             <div className="events-list">
-            {todayEvents.map(event => (
-              <div className={`event-item ${event.color}`} key={event.id}>
-                <div className="event-time-icon">
-                  <div className="time-icon-circle"></div>
+              {todayEvents.map(event => (
+                <div className={`event-item ${event.color}`} key={event.id}>
+                  <div className="event-time-icon">
+                    <div className="time-icon-circle"></div>
+                  </div>
+                  <div className="event-details">
+                    <h4>{event.title}</h4>
+                    <p className="event-time">{event.time}</p>
+                    <p className="event-location">{event.location}</p>
+                  </div>
                 </div>
-                <div className="event-details">
-                  <h4>{event.title}</h4>
-                  <p className="event-time">{event.time}</p>
-                  <p className="event-location">{event.location}</p>
-                </div>
-              </div>
-            ))}
+              ))}
             </div>
           </div>
 
           {/* Tasks */}
           <div className="dashboard-card tasks-card">
-          <div className="card-header">
+            <div className="card-header">
               <h2>Tasks</h2>
               <span className="check-icon"></span>
-              <button 
-                className="sync-calendar-button" 
+              <button
+                className="sync-calendar-button"
                 onClick={handleGoogleCalendarSignIn}
               >
                 Sync with Google Calendar
               </button>
-          </div>
+            </div>
             <div className="tasks-count">
               <h3>{tasks.length}</h3>
               <p>tasks</p>
@@ -781,20 +794,20 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
             </button>
             <div className="tasks-list">
               {paginatedTasks.map(task => (
-                <div 
-                  key={task.taskId} 
+                <div
+                  key={task.taskId}
                   className={`task-item ${task.completed ? 'completed' : ''}`}
                 >
-                  <div 
-                  className="task-checkbox"
-                  onClick={() => handleToggleComplete(task.taskId)}
-                >
-                  {task.completed ? (
-                    <span className="checked">✓</span>
-                  ) : (
-                    <span className="unchecked"></span>
-                  )}
-                </div>
+                  <div
+                    className="task-checkbox"
+                    onClick={() => handleToggleComplete(task.taskId)}
+                  >
+                    {task.completed ? (
+                      <span className="checked">✓</span>
+                    ) : (
+                      <span className="unchecked"></span>
+                    )}
+                  </div>
                   <div className="task-content">
                     <h3 className="task-title">{task.title}</h3>
                     <p className="task-description">{task.description}</p>
@@ -803,7 +816,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
                       <span className="task-category">{task.category}</span>
                       {!task.completed && (
                         <div className="task-actions">
-                          <button 
+                          <button
                             className="edit-button"
                             onClick={() => {
                               setEditingTask(task);
@@ -812,7 +825,7 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
                           >
                             Edit
                           </button>
-                          <button 
+                          <button
                             className="delete-button"
                             onClick={() => handleDeleteTask(task.taskId)}
                           >
@@ -826,81 +839,81 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
               ))}
             </div>
             <div className="pagination-controls">
-            <button 
-              onClick={() => setCurrentTaskPage(p => Math.max(p - 1, 1))} 
-              disabled={currentTaskPage === 1}
-            >
-              Prev
-            </button>
-            <span>Page {currentTaskPage} of {totalTaskPages}</span>
-            <button 
-              onClick={() => setCurrentTaskPage(p => Math.min(p + 1, totalTaskPages))} 
-              disabled={currentTaskPage === totalTaskPages}
-            >
-              Next
-            </button>
-          </div>
+              <button
+                onClick={() => setCurrentTaskPage(p => Math.max(p - 1, 1))}
+                disabled={currentTaskPage === 1}
+              >
+                Prev
+              </button>
+              <span>Page {currentTaskPage} of {totalTaskPages}</span>
+              <button
+                onClick={() => setCurrentTaskPage(p => Math.min(p + 1, totalTaskPages))}
+                disabled={currentTaskPage === totalTaskPages}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
 
         <div className="dashboard-row">
-            {/* Gamification */}
-            <div className="dashboard-card gamification-card">
-                <div className="card-header">
-                <h2>Progress</h2>
-                <span className="trophy-icon">🏆</span>
-                </div>
-                <div className="level-info">
-                <div className="level-badge">Level {currentLevel}</div>
-                <div className="xp-progress">
-                    <div className="progress-header">
-                    <span>XP Progress</span>
-                    <span className="progress-value">{questProgress}/{questGoal}</span>
-                    </div>
-                    <div className="progress-bar">
-                    <div 
-                        className="progress" 
-                        style={{ width: `${(questProgress / questGoal) * 100}%` }}
-                    ></div>
-                    </div>
-                </div>
-                </div>
-                <div className="streak-container">
-                <div className="streak-info">
-                    <span className="streak-flame">🔥</span>
-                    <div className="streak-count">
-                    <h3>{streakDays}</h3>
-                    <p>Day Streak</p>
-                    </div>
-                </div>
-                </div>
-                <div className="achievements-section">
-                <h3>Recent Achievements</h3>
-                <div className="achievements-list">
-                    {achievements.map((achievement, index) => (
-                    <div key={index} className="achievement-item">
-                        <span className="achievement-icon">{achievement.icon}</span>
-                        <div className="achievement-details">
-                        <h4 className="achievement-name">{achievement.name}</h4>
-                        <p className="achievement-description">{achievement.description}</p>
-                        </div>
-                    </div>
-                    ))}
-                </div>
-                </div>
+          {/* Gamification */}
+          <div className="dashboard-card gamification-card">
+            <div className="card-header">
+              <h2>Progress</h2>
+              <span className="trophy-icon">🏆</span>
             </div>
+            <div className="level-info">
+              <div className="level-badge">Level {currentLevel}</div>
+              <div className="xp-progress">
+                <div className="progress-header">
+                  <span>XP Progress</span>
+                  <span className="progress-value">{questProgress}/{questGoal}</span>
+                </div>
+                <div className="progress-bar">
+                  <div
+                    className="progress"
+                    style={{ width: `${(questProgress / questGoal) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div className="streak-container">
+              <div className="streak-info">
+                <span className="streak-flame">🔥</span>
+                <div className="streak-count">
+                  <h3>{streakDays}</h3>
+                  <p>Day Streak</p>
+                </div>
+              </div>
+            </div>
+            <div className="achievements-section">
+              <h3>Recent Achievements</h3>
+              <div className="achievements-list">
+                {achievements.map((achievement, index) => (
+                  <div key={index} className="achievement-item">
+                    <span className="achievement-icon">{achievement.icon}</span>
+                    <div className="achievement-details">
+                      <h4 className="achievement-name">{achievement.name}</h4>
+                      <p className="achievement-description">{achievement.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {showEditAccount && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <EditAccount 
-              user={userData} 
+            <EditAccount
+              user={userData}
               onUpdateUser={handleUpdateUser}
               onClose={() => setShowEditAccount(false)}
             />
-            <button 
+            <button
               className="close-button"
               onClick={() => setShowEditAccount(false)}
             >
@@ -922,11 +935,11 @@ export const HomePageUI = ({ user, tasks: propTasks }) => {
       )}
 
       {activeTab === 'profile' && (
-        <Profile 
-          user={userData} 
-          onClose={() => setActiveTab('tasks')} 
-          currentLevel={currentLevel} 
-          questProgress={questProgress} 
+        <Profile
+          user={userData}
+          onClose={() => setActiveTab('tasks')}
+          currentLevel={currentLevel}
+          questProgress={questProgress}
           dayStreak={dayStreakCount}
           achievements={achievements}
         />

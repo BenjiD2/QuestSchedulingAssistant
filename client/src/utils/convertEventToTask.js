@@ -1,4 +1,3 @@
-
 function convertEventToTask(event) {
   const start = event.start.dateTime || event.start.date;
   const end = event.end?.dateTime || event.end?.date || null;
