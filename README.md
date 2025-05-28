@@ -49,6 +49,7 @@ GOOGLE_CLIENT_ID=your_client_id_here
 GOOGLE_CLIENT_SECRET=your_client_secret_here
 GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
 PORT=8080
+SONAR_API_KEY=
 ```
 
 2. Client (client/.env):
