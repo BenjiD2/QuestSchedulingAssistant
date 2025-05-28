@@ -41,6 +41,8 @@ cd client && npm start
 ### Environment Setup
 Before running the application, make sure you have the following environment files set up:
 
+Please email us for the exact values. We cannot add them here due to security issues. 
+
 1. Server (server/.env):
 ```
 GOOGLE_CLIENT_ID=your_client_id_here
